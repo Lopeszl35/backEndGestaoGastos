@@ -1,5 +1,12 @@
+import express from "express";
+import cors from "cors";
+import morgan from "morgan";
+import session from "express-session";
 import dotenv from "dotenv";
-import express from "express;
+
+import manipulador404 from "./middleware/manipulador404.js";
+import manipuladorDeErros from "./middleware/manipuladorDeErros.js";
+
 dotenv.config();
 
 
