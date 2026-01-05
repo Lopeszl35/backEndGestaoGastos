@@ -5,7 +5,10 @@ const router = express.Router();
 router.use(cors());
 
 router.get('/status', (req, res) => {
-    res.status(200).send('Servidor ok');
+    res.status(200).send({
+        message: "Servidor rodando",
+        code: 200
+    });
 });
 
 export default router;
