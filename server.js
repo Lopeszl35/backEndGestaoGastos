@@ -57,9 +57,9 @@ const loadDependencies = async () => {
         console.log('Carregando dependências...');
 
         // Configuração do banco de dados
-        const { default: Database } = await import('./database/connection.js');
-        const database = Database.getInstance();
-        DependencyInjector.register('Database', database);
+        //const { default: Database } = await import('./database/connection.js');
+        //const database = Database.getInstance();
+        //DependencyInjector.register('Database', database);
 
         console.log('Database registrado com sucesso.');
 
@@ -174,7 +174,7 @@ const loadDependencies = async () => {
 // Função para inicializar o servidor
 const initializeServer = async () => {
     try {
-        await loadDependencies();
+        //await loadDependencies();
 
         // Rotas para teste
         const { default: routerTest } = await import('./modules/routes/routerTest.js');
@@ -210,7 +210,7 @@ const initializeServer = async () => {
 
 // Inicializa o Servidor e escuta na porta especificada
 const PORT = process.env.SERVER_PORT;
-const HOST = process.env.SERVER_HOST;
+//const HOST = process.env.SERVER_HOST;
 
 initializeServer().then(() => {
     app.listen(PORT, '0.0.0.0', () => {
@@ -230,7 +230,7 @@ async function testDatabaseConnection() {
     }
 }
 
-testDatabaseConnection();
+//testDatabaseConnection();
 
 /* Servidor HTTPS
 https.createServer({
