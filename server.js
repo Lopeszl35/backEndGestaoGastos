@@ -213,7 +213,7 @@ const PORT = process.env.SERVER_PORT;
 const HOST = process.env.SERVER_HOST;
 
 initializeServer().then(() => {
-    app.listen(PORT, HOST, () => {
+    app.listen(PORT, '0.0.0.0', () => {
         console.log(`Servidor rodando em http://${HOST}:${PORT}`);
     });
 });
