@@ -1,5 +1,5 @@
 import express from "express";
-import { obterVisaoGeralCartoesValidate, criarCartaoCreditoValidate, criarLancamentoCartaoValidate  } from "./CartoesValidate.js";
+import { obterVisaoGeralCartoesValidate, criarCartaoCreditoValidate, criarLancamentoCartaoValidate, ativarDesativarCartaoValidate  } from "./CartoesValidate.js";
 
 const router = express.Router();
 
@@ -24,6 +24,12 @@ export default function CartoesRoutes(cartoesController) {
   "/cartoes/:id_usuario/:cartao_uuid/lancamentos",
   criarLancamentoCartaoValidate,
   (req, res, next) => cartoesController.criarLancamento(req, res, next)
+);
+
+// rota para ativar ou desativar cartão
+router.patch(
+  "/cartoes/:id_usuario/:cartao_uuid/ativar",
+  (req, res, next) => cartoesController.ativarDesativarCartao(req, res, next)
 );
 
   return router;
