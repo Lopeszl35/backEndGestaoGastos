@@ -27,15 +27,24 @@ class Database {
     });
 
     this.pool = mysql12.createPool({
-      host: process.env.DB_HOST_PROD,
-      user: process.env.DB_USER_PROD,
-      password: process.env.DB_PASS_PROD,
-      database: process.env.DB_NAME_PROD,
-      port: process.env.DB_PORT_PROD,
+      host: process.env.DB_HOST_PROD || process.env.process.env.MYSQLHOST,
+      user: process.env.DB_USER_PROD || process.env.MYSQLUSER,
+      password: process.env.DB_PASS_PROD || process.env.MYSQLPASSWORD,
+      database: process.env.DB_NAME_PROD || process.env.MYSQLDATABASE,
+      port: Number(process.env.DB_PORT_PROD || process.env.MYSQLPORT || 3306),
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
+
+      // ajuda bastante em ambiente cloud
+      connectTimeout: 30000,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0,
+
+      // evita dor com DNS/IPv6 em alguns ambientes
+      family: 4,
     });
+    console.log("✅ Pool MySQL (mysql2) criado com sucesso!");
   }
 
   static getInstance() {
