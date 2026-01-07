@@ -112,6 +112,7 @@ export class CartoesService {
       limite: cartaoSelecionadoModel.limite,
       diaFechamento: cartaoSelecionadoModel.diaFechamento,
       diaVencimento: cartaoSelecionadoModel.diaVencimento,
+      ativo: cartaoSelecionadoModel.ativo,
     });
 
     const faturaSelecionada = faturaPorIdCartao.get(cartaoSelecionadoModel.idCartao);
@@ -196,6 +197,7 @@ export class CartoesService {
           limiteDisponivel: entidadeSelecionada.calcularLimiteDisponivel(limiteUsadoSelecionado),
           diaFechamento: entidadeSelecionada.diaFechamento,
           diaVencimento: entidadeSelecionada.diaVencimento,
+          ativo: entidadeSelecionada.ativo,
         },
         porCategoria,
         parcelasAtivas,
@@ -327,5 +329,17 @@ export class CartoesService {
     };
     }
 
+    async ativarDesativarCartao({ idUsuario, uuidCartao, ativar }) {
+      console.log("ativarDesativarCartao chamado com:", { idUsuario, uuidCartao, ativar });
+        const cartaoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario);
 
+        if (!cartaoModel) throw new naoEncontrado("Cartão não encontrado.");
+
+        const cartaoEditado = await this.cartoesRepositorio.ativarDesativarCartao({
+            idCartao: cartaoModel.idCartao,
+            ativar,
+        });
+
+        return { ativo: cartaoEditado.ativo };
+    }
 }

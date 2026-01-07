@@ -124,3 +124,12 @@ export const criarLancamentoCartaoValidate = [
   validarRequisicao,
 ];
 
+export const ativarDesativarCartaoValidate = [
+  param("id_usuario").notEmpty().isInt({ min: 1 }).withMessage("id_usuario inválido."),
+  param("cartao_uuid").notEmpty().isUUID().withMessage("cartao_uuid inválido."),
+
+  query("ativo").notEmpty().isBoolean().withMessage("ativo inválido (true/false)."),
+  
+  validarRequisicao,
+];
+

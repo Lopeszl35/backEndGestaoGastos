@@ -14,6 +14,12 @@ export class CartoesRepositorioORM {
     });
   }
 
+   async buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario) {
+    return CartaoCreditoModel.findOne({
+      where: { uuid_cartao: uuidCartao, idUsuario },
+    });
+  }
+
   async existeCartaoAtivoIgual({idUsuario, nomeNorm, bandeiraNorm, ultimos4Norm}) {
     const encontrado = await CartaoCreditoModel.findOne({
       where: {
@@ -59,6 +65,13 @@ export class CartoesRepositorioORM {
         ultimos4Norm,
     });
     return criado;
+  }
+
+  async ativarDesativarCartao({ idCartao, ativar }) {
+    const cartao = await CartaoCreditoModel.findByPk(idCartao);
+    cartao.ativo = ativar;
+    await cartao.save();
+    return cartao;
   }
 
 }
