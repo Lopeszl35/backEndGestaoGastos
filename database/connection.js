@@ -1,9 +1,17 @@
-import mysql12 from "mysql2/promise";
+import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+function pick(nameA, valA, nameB, valB) {
+  const v = valA ?? valB;
+  if (!v) throw new Error(`Env ausente: (${nameA}) ou (${nameB})`);
+  return v;
+}
+
 class Database {
+  static instance;
+
   constructor() {
     if (Database.instance) {
       throw new Error(
@@ -11,102 +19,94 @@ class Database {
       );
     }
 
-    const requiredEnvVars = [
+    // ✅ Prioriza Railway (MYSQL*) e faz fallback para DB_*_PROD
+    const host = pick(
+      "MYSQLHOST",
+      process.env.MYSQLHOST,
       "DB_HOST_PROD",
+      process.env.DB_HOST_PROD
+    );
+    const port = Number(
+      pick(
+        "MYSQLPORT",
+        process.env.MYSQLPORT,
+        "DB_PORT_PROD",
+        process.env.DB_PORT_PROD
+      ) || 3306
+    );
+    const user = pick(
+      "MYSQLUSER",
+      process.env.MYSQLUSER,
       "DB_USER_PROD",
+      process.env.DB_USER_PROD
+    );
+    const password = pick(
+      "MYSQLPASSWORD",
+      process.env.MYSQLPASSWORD,
       "DB_PASS_PROD",
+      process.env.DB_PASS_PROD
+    );
+    const database = pick(
+      "MYSQLDATABASE",
+      process.env.MYSQLDATABASE,
       "DB_NAME_PROD",
-      "DB_PORT_PROD",
-    ];
-    requiredEnvVars.forEach((varName) => {
-      if (!process.env[varName]) {
-        throw new Error(
-          `A variável de ambiente ${varName} não está configurada.`
-        );
-      }
-    });
+      process.env.DB_NAME_PROD
+    );
 
-    this.pool = mysql12.createPool({
-      host: process.env.DB_HOST_PROD || process.env.MYSQLHOST,
-      user: process.env.DB_USER_PROD || process.env.MYSQLUSER,
-      password: process.env.DB_PASS_PROD || process.env.MYSQLPASSWORD,
-      database: process.env.DB_NAME_PROD || process.env.MYSQLDATABASE,
-      port: Number(process.env.DB_PORT_PROD || process.env.MYSQLPORT || 3306),
+    console.log("DB CONFIG (sanity):", { host, port, user, database });
+
+    this.pool = mysql.createPool({
+      host,
+      port,
+      user,
+      password,
+      database,
+
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-
-      // ajuda bastante em ambiente cloud
       connectTimeout: 30000,
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 0,
-
-      // evita dor com DNS/IPv6 em alguns ambientes
-      family: 4,
     });
+
     console.log("✅ Pool MySQL (mysql2) criado com sucesso!");
   }
 
   static getInstance() {
-    if (!Database.instance) {
-      Database.instance = new Database();
-    }
+    if (!Database.instance) Database.instance = new Database();
     return Database.instance;
   }
 
   async executaComando(sql, params = []) {
-    const connection = await this.pool.getConnection();
-    try {
-      const [rows] = await connection.query(sql, params);
-      return rows;
-    } catch (error) {
-      console.error(`Erro ao executar comando SQL: ${sql}`, error);
-      throw error;
-    } finally {
-      connection.release();
-    }
+    // ✅ não precisa getConnection manual; pool.query já gerencia
+    const [rows] = await this.pool.query(sql, params);
+    return rows;
   }
 
   async executaComandoNonQuery(sql, params = []) {
-    const connection = await this.pool.getConnection();
-    try {
-      const [results] = await connection.query(sql, params);
-      return results.affectedRows;
-    } catch (error) {
-      console.error(`Erro ao executar comando non-query SQL: ${sql}`, error);
-      throw error;
-    } finally {
-      connection.release();
-    }
+    const [result] = await this.pool.query(sql, params);
+    return result?.affectedRows ?? 0;
   }
 
   async beginTransaction() {
-    const connection = await this.pool.getConnection();
-    await connection.beginTransaction();
-    return connection;
+    const conn = await this.pool.getConnection();
+    await conn.beginTransaction();
+    return conn;
   }
 
-  async commitTransaction(connection) {
+  async commitTransaction(conn) {
     try {
-      await connection.commit();
-    } catch (error) {
-      console.error("Erro ao cometer transação:", error);
-      throw new Error("Erro ao cometer transação");
+      await conn.commit();
     } finally {
-      connection.release();
+      conn.release();
     }
   }
 
-  async rollbackTransaction(connection) {
-    if (connection) {
-      try {
-        await connection.rollback();
-      } catch (error) {
-        console.error("Erro ao reverter transação:", error);
-        throw new Error("Erro ao reverter transação");
-      } finally {
-        connection.release();
-      }
+  async rollbackTransaction(conn) {
+    if (!conn) return;
+    try {
+      await conn.rollback();
+    } finally {
+      conn.release();
     }
   }
 }
