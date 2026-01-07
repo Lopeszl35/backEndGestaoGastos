@@ -9,33 +9,33 @@ function handleValidation(req, _res, next) {
 }
 
 export const validateCreateUser = [
-    body('nome')
+    body('user.nome')
     .trim().exists({ checkFalsy: true }).withMessage('O nome de usuário é obrigatório.')
     .isString().withMessage('O nome de usuário deve ser uma string.')
     .isLength({ min: 3 }).withMessage('O nome de usuário deve ter pelo menos 3 caracteres.'),
 
-    body('email')
+    body('user.email')
     .trim().exists({ checkFalsy: true }).withMessage('O email é obrigatório.')
     .isEmail().withMessage('O email deve ser um endereço de email válido.'),
 
-    body('senha_hash')
+    body('user.senha_hash')
     .trim().exists({ checkFalsy: true }).withMessage('A senha é obrigatória.')
     .isLength({ min: 6 }).withMessage('A senha deve ter pelo menos 6 caracteres.')
     .isStrongPassword() .withMessage('A senha deve conter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma letra minúscula, um número e um caractere especial.'),
 
-    body('perfil_financeiro')
-    .trim().exists({ checkFalsy: true }).withMessage('O perfil financeiro é obrigatório.')
+    body('user.perfil_financeiro')
+    .optional()
     .isString().withMessage('O perfil financeiro deve ser uma string.'),
 
-    body('salario_mensal')
+    body('user.salario_mensal')
     .optional()
     .isFloat({ min: 0 }).withMessage('O salário mensal deve ser um número positivo.'),
 
-    body('saldo_inicial')
+    body('user.saldo_inicial')
     .optional()
     .isFloat({ min: 0 }).withMessage('O saldo inicial deve ser um número positivo.'),
 
-    body('saldo_atual')
+    body('user.saldo_atual')
     .optional()
     .isFloat({ min: 0 }).withMessage('O saldo atual deve ser um número positivo.'),
 
@@ -43,11 +43,11 @@ export const validateCreateUser = [
 ]
 
 export const validateUpdateUser = [
-  body("nome").optional().trim().isLength({ min: 3 }).withMessage("O nome deve ter pelo menos 3 caracteres."),
-  body("email").optional().trim().isEmail().withMessage("O email deve ser válido."),
-  body("senha").optional().trim().isStrongPassword().withMessage("Senha fraca."),
-  body("perfil_financeiro").optional().trim().isString().withMessage("O perfil financeiro deve ser uma string."),
-  body("salario_mensal").optional().isFloat({ min: 0 }).withMessage("O salário mensal deve ser positivo."),
+  body("user.nome").optional().trim().isLength({ min: 3 }).withMessage("O nome deve ter pelo menos 3 caracteres."),
+  body("user.email").optional().trim().isEmail().withMessage("O email deve ser válido."),
+  body("user.senha").optional().trim().isStrongPassword().withMessage("Senha fraca."),
+  body("user.perfil_financeiro").optional().trim().isString().withMessage("O perfil financeiro deve ser uma string."),
+  body("user.salario_mensal").optional().isFloat({ min: 0 }).withMessage("O salário mensal deve ser positivo."),
 
   // NÃO EXISTE:
   body("saldo_atual").not().exists().withMessage("saldo_atual não pode ser alterado por esta rota."),

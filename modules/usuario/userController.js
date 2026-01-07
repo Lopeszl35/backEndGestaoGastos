@@ -8,7 +8,7 @@ class UserController {
   }
 
   async createUser(req, res, next) {
-    const user = req.body;
+    const { user } = req.body;
     try {
       const response = await this.UserService.createUser(new UserPublicDTO(user));
       if (!response.insertId) {
