@@ -36,6 +36,8 @@ export default class GastoMesController {
       const result = await this.GastoMesService.getLimiteGastosMes(id_usuario, ano, mes);
       if (result && result.code === "NAO_ENCONTRADO") {
         throw new NaoEncontrado(result.mensagem, 404);
+      } else if (!result.length) {
+        return res.status(200).json(0)
       }
       return res.status(200).json(result);
     } catch (error) {
