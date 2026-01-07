@@ -45,7 +45,7 @@ class UserRepository {
      */
     async createUser(user) {
         const sql = `
-            INSERT INTO Usuarios (nome, email, senha_hash, perfil_financeiro, salario_mensal, saldo_inicial, saldo_atual)
+            INSERT INTO usuarios (nome, email, senha_hash, perfil_financeiro, salario_mensal, saldo_inicial, saldo_atual)
             VALUES (?, ?, ?, ?, ?, ?, ?);
         `;
         const params = [
@@ -57,7 +57,6 @@ class UserRepository {
             user.saldo_inicial ? user.saldo_inicial : 0,
             user.saldo_atual,
         ];
-        console.log("Parametros para criação do usuário:", params);
         try {
             const result = await this.Database.executaComando(sql, params);
             return { insertId: result.insertId, result: result };
@@ -81,7 +80,7 @@ async atualizarUsuario(idUsuario, dadosParaAtualizacao) {
     valoresParaAtualizacao.push(idUsuario);
 
     const sql = `
-        UPDATE Usuarios
+        UPDATE usuarios
         SET ${clausulaSet}
         WHERE id_usuario = ?;
     `;
@@ -103,7 +102,7 @@ async atualizarUsuario(idUsuario, dadosParaAtualizacao) {
      */
     async getUserSaldo(userId) {
         const sql = `
-            SELECT saldo_atual FROM Usuarios
+            SELECT saldo_atual FROM usuarios
             WHERE id_usuario = ?;
         `;
         try {
@@ -117,7 +116,7 @@ async atualizarUsuario(idUsuario, dadosParaAtualizacao) {
 
     async atualizarUserSaldo(userId, novoSaldo) {
         const sql = `
-            UPDATE Usuarios
+            UPDATE usuarios
             SET saldo_atual = ?
             WHERE id_usuario = ?`
         ;
@@ -133,7 +132,7 @@ async atualizarUsuario(idUsuario, dadosParaAtualizacao) {
     async getUserById(userId) {
         const sql = `
             SELECT *
-            FROM Usuarios
+            FROM usuarios
             WHERE id_usuario = ?;
         `;
 
@@ -149,7 +148,7 @@ async atualizarUsuario(idUsuario, dadosParaAtualizacao) {
     async getUserByEmail(email) {
         const sql = `
             SELECT *
-            FROM Usuarios
+            FROM usuarios
             WHERE email = ?;
         `;
         try {
@@ -163,7 +162,7 @@ async atualizarUsuario(idUsuario, dadosParaAtualizacao) {
 
     async deleteUser(userId) {
         const sql = `
-            DELETE FROM Usuarios
+            DELETE FROM usuarios
             WHERE id_usuario = ?;
         `;
         try {
