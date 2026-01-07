@@ -37,7 +37,7 @@ export default class GastoMesController {
       if (result && result.code === "NAO_ENCONTRADO") {
         throw new NaoEncontrado(result.mensagem, 404);
       } else if (!result.length) {
-        return res.status(200).json(0)
+        return res.status(200).json(null)
       }
       return res.status(200).json(result);
     } catch (error) {
