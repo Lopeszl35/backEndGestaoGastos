@@ -27,7 +27,7 @@ class Database {
     });
 
     this.pool = mysql12.createPool({
-      host: process.env.DB_HOST_PROD || process.env.process.env.MYSQLHOST,
+      host: process.env.DB_HOST_PROD || process.env.MYSQLHOST,
       user: process.env.DB_USER_PROD || process.env.MYSQLUSER,
       password: process.env.DB_PASS_PROD || process.env.MYSQLPASSWORD,
       database: process.env.DB_NAME_PROD || process.env.MYSQLDATABASE,
