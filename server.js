@@ -354,7 +354,7 @@ const initializeServer = async () => {
 };
 
 // Inicializa o Servidor e escuta na porta especificada
-const PORT = 8080;
+const PORT = process.env.SERVER_PORT;
 const HOST = process.env.SERVER_HOST;
 
 initializeServer().then(() => {
