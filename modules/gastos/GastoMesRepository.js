@@ -204,7 +204,7 @@ class GastoMesRepository {
         };
       }
     } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
+      
       throw error;
     }
   }
