@@ -288,6 +288,7 @@ const loadDependencies = async () => {
       gastoMesRepository: DependencyInjector.get("GastoMesRepository"),
       alertasService: DependencyInjector.get("AlertasService"),
       userRepository: DependencyInjector.get("UserRepository"),
+      CartoesService: DependencyInjector.get("CartoesService"),
     });
 
     console.log("Todas as dependências foram registradas!");
