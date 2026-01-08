@@ -10,12 +10,14 @@ class UserController {
   async createUser(req, res, next) {
     const { user } = req.body;
     try {
-      const response = await this.UserService.createUser(new UserPublicDTO(user));
+      const response = await this.UserService.createUser(
+        new UserPublicDTO(user)
+      );
       if (!response.insertId) {
-            throw new Error('Erro ao criar o usuário: ' + JSON.stringify(response));
-          }
+        throw new Error("Erro ao criar o usuário: " + JSON.stringify(response));
+      }
       res.status(201).json({
-        message: 'Usuário criado com sucesso',
+        message: "Usuário criado com sucesso",
         status: 201,
         data: response,
       });
@@ -25,21 +27,24 @@ class UserController {
   }
 
   async atualizarUsuario(req, res, next) {
-  try {
-    const { userId } = req.params;
-    const updates = req.body;
+    try {
+      const { userId } = req.params;
+      const updates = req.body;
 
-    const result = await this.UserService.atualizarUsuario(Number(userId), updates);
+      const result = await this.UserService.atualizarUsuario(
+        Number(userId),
+        updates
+      );
 
-    res.status(200).json({
-      message: "Usuário atualizado com sucesso",
-      status: 200,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
+      res.status(200).json({
+        message: "Usuário atualizado com sucesso",
+        status: 200,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-}
 
   async loginUser(req, res, next) {
     const { email, senha } = req.body;
@@ -52,7 +57,7 @@ class UserController {
     }
   }
 
-  async deleteUser (req, res, next) {
+  async deleteUser(req, res, next) {
     const { userId } = req.params;
     try {
       const result = await this.UserService.deleteUser(userId);
@@ -79,10 +84,7 @@ class UserController {
     try {
       const { userId, saldo } = req.body;
       console.log("Saldo recebido no controller:", saldo);
-      const result = await this.UserService.atualizarUserSaldo(
-        userId,
-        saldo
-      );
+      const result = await this.UserService.atualizarUserSaldo(userId, saldo);
       res.status(200).json(result);
     } catch (erro) {
       next(erro);
@@ -94,7 +96,7 @@ class UserController {
       const { userId } = req.params;
       const userData = await this.UserService.getUserData(userId);
       if (!userData) {
-        throw new NaoEncontrado('Usuário não encontrado');
+        throw new NaoEncontrado("Usuário não encontrado");
       }
       res.status(200).json(userData);
     } catch (error) {
