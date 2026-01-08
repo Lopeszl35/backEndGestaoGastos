@@ -74,12 +74,6 @@ export default class GastoMesController {
           );
         }
       );
-      if (result && result.code === "FALHA_ADICAO_GASTO"  || result.code === "SALDO_INSUFICIENTE") {
-        return res.status(400).json({
-          message: result.mensagem,
-          code: result.code,
-        })
-      }
       res.status(201).json(result);
     } catch (error) {
       next(error);

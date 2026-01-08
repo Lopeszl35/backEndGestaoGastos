@@ -43,7 +43,6 @@ class GastoMesRepository {
     }
   }
 
-
   async getLimiteGastosMes(id_usuario, ano, mes) {
     try {
       const sql = `
@@ -55,12 +54,11 @@ class GastoMesRepository {
         AND mes = ?
         LIMIT 1
       `;
-      
-      const params = [(Number(id_usuario)), Number(ano), Number(mes)];
+
+      const params = [Number(id_usuario), Number(ano), Number(mes)];
       const rows = await this.database.executaComando(sql, params);
       console.log("getLimiteGastosMesRows: ", rows);
-      return rows
-   
+      return rows;
     } catch (error) {
       ErroSqlHandler.tratarErroSql(error);
       throw error;
@@ -128,24 +126,23 @@ class GastoMesRepository {
         result,
       };
     } catch (error) {
-      
       throw error;
     }
   }
 
   async getGastosTotaisPorCategoria({ idUsuario, inicio, fim }) {
     try {
-       const params = [idUsuario];
+      const params = [idUsuario];
 
-    const filtroPeriodo =
-      inicio && fim ? "AND g.data_gasto BETWEEN ? AND ?" : "";
+      const filtroPeriodo =
+        inicio && fim ? "AND g.data_gasto BETWEEN ? AND ?" : "";
 
-    if (inicio && fim) {
-      params.push(inicio, fim);
-    }
+      if (inicio && fim) {
+        params.push(inicio, fim);
+      }
 
-    // Observação: LEFT JOIN pra trazer categoria mesmo se não tiver gasto
-    const sql = `
+      // Observação: LEFT JOIN pra trazer categoria mesmo se não tiver gasto
+      const sql = `
       SELECT
         cg.id_categoria,
         cg.nome AS nomeCategoria,
@@ -162,21 +159,18 @@ class GastoMesRepository {
       ORDER BY cg.nome, g.data_gasto, g.id_gasto;
     `;
 
-    // Mais simples: reordenar params:
-    const orderedParams =
-      inicio && fim
-        ? [inicio, fim, idUsuario]
-        : [idUsuario];
+      // Mais simples: reordenar params:
+      const orderedParams =
+        inicio && fim ? [inicio, fim, idUsuario] : [idUsuario];
 
-    const result = await this.database.executaComando(sql, orderedParams);
-    console.log("Gastos totais por categoria:", result);
-    return result;
+      const result = await this.database.executaComando(sql, orderedParams);
+      console.log("Gastos totais por categoria:", result);
+      return result;
     } catch (error) {
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
-
 
   async addGasto(gastos, id_usuario, connection) {
     const sql = `
@@ -200,7 +194,7 @@ class GastoMesRepository {
       } else {
         return {
           mensagem: "Falha ao adicionar gasto.",
-          code: "FALHA_ADICAO_GASTO"
+          code: "FALHA_ADICAO_GASTO",
         };
       }
     } catch (error) {
@@ -209,7 +203,7 @@ class GastoMesRepository {
     }
   }
 
-    async getSaldoAtual(id_usuario, connection) {
+  async getSaldoAtual(id_usuario, connection) {
     const sql = `
       SELECT saldo_atual
       FROM usuarios
@@ -224,7 +218,9 @@ class GastoMesRepository {
         return Number(saldo);
       }
 
-      const rows = await this.database.executaComando(sql, [Number(id_usuario)]);
+      const rows = await this.database.executaComando(sql, [
+        Number(id_usuario),
+      ]);
       const saldo = rows?.[0]?.saldo_atual ?? 0;
       return Number(saldo);
     } catch (error) {
@@ -237,7 +233,12 @@ class GastoMesRepository {
    * Incrementa gasto_atual_mes em total_gastos_mes baseado na data do gasto.
    * - Se não existir registro para (id_usuario, ano, mes), cria com limite_gasto_mes = 0.
    */
-  async incrementarGastoAtualMes({ id_usuario, data_gasto, valor, connection }) {
+  async incrementarGastoAtualMes({
+    id_usuario,
+    data_gasto,
+    valor,
+    connection,
+  }) {
     const sql = `
       INSERT INTO total_gastos_mes (id_usuario, ano, mes, limite_gasto_mes, gasto_atual_mes)
       VALUES (?, YEAR(?), MONTH(?), 0.00, ?)
@@ -261,8 +262,6 @@ class GastoMesRepository {
       throw error;
     }
   }
-
-
 }
 
 export default GastoMesRepository;

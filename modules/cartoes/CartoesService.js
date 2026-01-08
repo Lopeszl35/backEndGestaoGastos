@@ -1,6 +1,6 @@
 import { sequelize } from "../../database/sequelize.js";
 import { CartaoCreditoEntity } from "./domain/CartaoCreditoEntity.js";
-import { CartaoLancamentoEntity } from "./domain/CartaoLancamentoEntity.js"
+import { CartaoLancamentoEntity } from "./domain/CartaoLancamentoEntity.js";
 import naoEncontrado from "../../errors/naoEncontrado.js";
 import RequisicaoIncorreta from "../../errors/RequisicaoIncorreta.js";
 import crypto from "crypto";
@@ -33,14 +33,19 @@ function diferencaMeses(dataInicio, ano, mes) {
 }
 
 export class CartoesService {
-  constructor({ cartoesRepositorio, faturasRepositorio, lancamentosRepositorio }) {
+  constructor({
+    cartoesRepositorio,
+    faturasRepositorio,
+    lancamentosRepositorio,
+  }) {
     this.cartoesRepositorio = cartoesRepositorio;
     this.faturasRepositorio = faturasRepositorio;
     this.lancamentosRepositorio = lancamentosRepositorio;
   }
 
   async obterVisaoGeralCartoes({ idUsuario, ano, mes, uuidCartaoSelecionado }) {
-    const cartoesModel = await this.cartoesRepositorio.listarCartoesAtivosPorUsuario(idUsuario);
+    const cartoesModel =
+      await this.cartoesRepositorio.listarCartoesAtivosPorUsuario(idUsuario);
 
     if (!cartoesModel.length) {
       return {
@@ -53,12 +58,13 @@ export class CartoesService {
 
     const idsCartao = cartoesModel.map((c) => c.idCartao);
 
-    const faturasDoMes = await this.faturasRepositorio.buscarFaturasDoMesPorUsuarioECartoes({
-      idUsuario,
-      ano,
-      mes,
-      idsCartao,
-    });
+    const faturasDoMes =
+      await this.faturasRepositorio.buscarFaturasDoMesPorUsuarioECartoes({
+        idUsuario,
+        ano,
+        mes,
+        idsCartao,
+      });
 
     const faturaPorIdCartao = new Map();
     for (const f of faturasDoMes) {
@@ -78,7 +84,9 @@ export class CartoesService {
       });
 
       const fatura = faturaPorIdCartao.get(c.idCartao);
-      const limiteUsado = fatura ? numero(fatura.totalLancamentos) - numero(fatura.totalPago) : 0;
+      const limiteUsado = fatura
+        ? numero(fatura.totalLancamentos) - numero(fatura.totalPago)
+        : 0;
 
       return {
         uuid_cartao: entidade.uuid_cartao,
@@ -98,7 +106,11 @@ export class CartoesService {
     // cartão selecionado (ou o primeiro)
     const uuidSelecionado = uuidCartaoSelecionado ?? cartoes[0].uuid;
 
-    const cartaoSelecionadoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuario(uuidSelecionado, idUsuario);
+    const cartaoSelecionadoModel =
+      await this.cartoesRepositorio.buscarCartaoPorUuidEUsuario(
+        uuidSelecionado,
+        idUsuario
+      );
     if (!cartaoSelecionadoModel) {
       throw new naoEncontrado("Cartão não encontrado para este usuário.");
     }
@@ -115,22 +127,25 @@ export class CartoesService {
       ativo: cartaoSelecionadoModel.ativo,
     });
 
-    const faturaSelecionada = faturaPorIdCartao.get(cartaoSelecionadoModel.idCartao);
+    const faturaSelecionada = faturaPorIdCartao.get(
+      cartaoSelecionadoModel.idCartao
+    );
     const limiteUsadoSelecionado = faturaSelecionada
-      ? numero(faturaSelecionada.totalLancamentos) - numero(faturaSelecionada.totalPago)
+      ? numero(faturaSelecionada.totalLancamentos) -
+        numero(faturaSelecionada.totalPago)
       : 0;
 
     const primeiroDiaMes = criarDataISOPrimeiroDia(ano, mes);
     const ultimoDiaMes = criarDataISOUltimoDia(ano, mes);
 
-    
-    const lancamentosQueAfetamOMes = await this.lancamentosRepositorio.listarLancamentosQueGeramCobrancaNoMes({
-      idUsuario,
-      idCartao: cartaoSelecionadoModel.idCartao,
-      dataPrimeiroDiaMes: primeiroDiaMes,
-      dataUltimoDiaMes: ultimoDiaMes,
-      sequelize,
-    });
+    const lancamentosQueAfetamOMes =
+      await this.lancamentosRepositorio.listarLancamentosQueGeramCobrancaNoMes({
+        idUsuario,
+        idCartao: cartaoSelecionadoModel.idCartao,
+        dataPrimeiroDiaMes: primeiroDiaMes,
+        dataUltimoDiaMes: ultimoDiaMes,
+        sequelize,
+      });
 
     const itensDoMes = [];
     const porCategoriaMap = new Map();
@@ -140,7 +155,8 @@ export class CartoesService {
       const mesesDesdeInicio = diferencaMeses(l.primeiroMesRef, ano, mes);
       const numeroParcelaNoMes = mesesDesdeInicio + 1;
 
-      if (numeroParcelaNoMes < 1 || numeroParcelaNoMes > l.numeroParcelas) continue;
+      if (numeroParcelaNoMes < 1 || numeroParcelaNoMes > l.numeroParcelas)
+        continue;
 
       const valorParcela = numero(l.valorParcela);
       const categoria = l.categoria?.trim() || "Outros";
@@ -157,9 +173,13 @@ export class CartoesService {
         },
       });
 
-      porCategoriaMap.set(categoria, numero((porCategoriaMap.get(categoria) ?? 0) + valorParcela));
+      porCategoriaMap.set(
+        categoria,
+        numero((porCategoriaMap.get(categoria) ?? 0) + valorParcela)
+      );
 
-      const aindaEstaAtivo = l.numeroParcelas > 1 && l.parcelasPagas < l.numeroParcelas;
+      const aindaEstaAtivo =
+        l.numeroParcelas > 1 && l.parcelasPagas < l.numeroParcelas;
       const parcelaAtualAindaNaoPaga = numeroParcelaNoMes > l.parcelasPagas;
 
       if (aindaEstaAtivo && parcelaAtualAindaNaoPaga) {
@@ -176,10 +196,16 @@ export class CartoesService {
     }
 
     const porCategoria = Array.from(porCategoriaMap.entries())
-      .map(([categoria, valor]) => ({ categoria, valor: Number(valor.toFixed(2)) }))
+      .map(([categoria, valor]) => ({
+        categoria,
+        valor: Number(valor.toFixed(2)),
+      }))
       .sort((a, b) => b.valor - a.valor);
 
-    const totalGastosMes = itensDoMes.reduce((acc, item) => acc + numero(item.valor), 0);
+    const totalGastosMes = itensDoMes.reduce(
+      (acc, item) => acc + numero(item.valor),
+      0
+    );
 
     return {
       periodo: { ano, mes },
@@ -194,7 +220,9 @@ export class CartoesService {
           corHex: entidadeSelecionada.corHex,
           limiteTotal: numero(entidadeSelecionada.limite),
           limiteUsado: Number(limiteUsadoSelecionado.toFixed(2)),
-          limiteDisponivel: entidadeSelecionada.calcularLimiteDisponivel(limiteUsadoSelecionado),
+          limiteDisponivel: entidadeSelecionada.calcularLimiteDisponivel(
+            limiteUsadoSelecionado
+          ),
           diaFechamento: entidadeSelecionada.diaFechamento,
           diaVencimento: entidadeSelecionada.diaVencimento,
           ativo: entidadeSelecionada.ativo,
@@ -224,8 +252,12 @@ export class CartoesService {
       ativo: true,
     });
 
-    const nomeNorm = String(entidade.nome ?? "").trim().toLowerCase();
-    const bandeiraNorm = String(entidade.bandeira ?? "").trim().toLowerCase();
+    const nomeNorm = String(entidade.nome ?? "")
+      .trim()
+      .toLowerCase();
+    const bandeiraNorm = String(entidade.bandeira ?? "")
+      .trim()
+      .toLowerCase();
     const ultimos4Norm = String(entidade.ultimos4 ?? "").trim(); // não faz sentido lower
 
     const jaExiste = await this.cartoesRepositorio.existeCartaoAtivoIgual({
@@ -236,10 +268,9 @@ export class CartoesService {
     });
 
     if (jaExiste) {
-      throw new RequisicaoIncorreta(
-        "Cartão já cadastrado.",
-        ["Já existe um cartão ativo com o mesmo nome/bandeira/últimos 4 dígitos."]
-      );
+      throw new RequisicaoIncorreta("Cartão já cadastrado.", [
+        "Já existe um cartão ativo com o mesmo nome/bandeira/últimos 4 dígitos.",
+      ]);
     }
 
     const criadoModel = await this.cartoesRepositorio.criarCartaoParaUsuario({
@@ -270,76 +301,84 @@ export class CartoesService {
       diaVencimento: criadoModel.diaVencimento,
       ativo: Boolean(criadoModel.ativo),
     };
-  } 
+  }
 
   async criarLancamentoCartao({ idUsuario, uuidCartao, dadosLancamento }) {
-    const cartaoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuario(uuidCartao, idUsuario);
+    const cartaoModel =
+      await this.cartoesRepositorio.buscarCartaoPorUuidEUsuario(
+        uuidCartao,
+        idUsuario
+      );
 
     if (!cartaoModel) throw new naoEncontrado("Cartão não encontrado.");
     if (!cartaoModel.ativo) throw new naoEncontrado("Cartão inativo.");
 
     const entidade = new CartaoLancamentoEntity({
-        descricao: dadosLancamento.descricao,
-        categoria: dadosLancamento.categoria,
-        valorTotal: dadosLancamento.valorTotal,
-        dataCompra: dadosLancamento.dataCompra,
-        parcelado: dadosLancamento.parcelado,
-        numeroParcelas: dadosLancamento.numeroParcelas,
-        diaFechamento: cartaoModel.diaFechamento,
+      descricao: dadosLancamento.descricao,
+      categoria: dadosLancamento.categoria,
+      valorTotal: dadosLancamento.valorTotal,
+      dataCompra: dadosLancamento.dataCompra,
+      parcelado: dadosLancamento.parcelado,
+      numeroParcelas: dadosLancamento.numeroParcelas,
+      diaFechamento: cartaoModel.diaFechamento,
     });
 
     const resultado = await sequelize.transaction(async (transaction) => {
-        const lancamentoModel = await this.lancamentosRepositorio.criarLancamentoCartao({
-        idUsuario,
-        idCartao: cartaoModel.idCartao,
-        descricao: entidade.descricao,
-        categoria: entidade.categoria,
-        valorTotal: entidade.valorTotal,
-        numeroParcelas: entidade.numeroParcelas,
-        valorParcela: entidade.valorParcela,
-        dataCompra: entidade.dataCompra,
-        primeiroMesRef: entidade.primeiroMesRef,
-        transaction,
+      const lancamentoModel =
+        await this.lancamentosRepositorio.criarLancamentoCartao({
+          idUsuario,
+          idCartao: cartaoModel.idCartao,
+          descricao: entidade.descricao,
+          categoria: entidade.categoria,
+          valorTotal: entidade.valorTotal,
+          numeroParcelas: entidade.numeroParcelas,
+          valorParcela: entidade.valorParcela,
+          dataCompra: entidade.dataCompra,
+          primeiroMesRef: entidade.primeiroMesRef,
+          transaction,
         });
 
-        for (const { ano, mes } of entidade.mesesImpactados) {
+      for (const { ano, mes } of entidade.mesesImpactados) {
         await this.faturasRepositorio.upsertSomarTotalLancamentos({
-            idUsuario,
-            idCartao: cartaoModel.idCartao,
-            ano,
-            mes,
-            valorSomar: entidade.valorParcela,
-            transaction,
+          idUsuario,
+          idCartao: cartaoModel.idCartao,
+          ano,
+          mes,
+          valorSomar: entidade.valorParcela,
+          transaction,
         });
-        }
+      }
 
-        return lancamentoModel;
+      return lancamentoModel;
     });
 
     return {
-        idLancamento: resultado.idLancamento,
-        cartaoUuid: uuidCartao,
-        descricao: resultado.descricao,
-        categoria: resultado.categoria,
-        valorTotal: Number(resultado.valorTotal),
-        numeroParcelas: resultado.numeroParcelas,
-        valorParcela: Number(resultado.valorParcela),
-        dataCompra: resultado.dataCompra,
-        primeiroMesRef: resultado.primeiroMesRef,
+      idLancamento: resultado.idLancamento,
+      cartaoUuid: uuidCartao,
+      descricao: resultado.descricao,
+      categoria: resultado.categoria,
+      valorTotal: Number(resultado.valorTotal),
+      numeroParcelas: resultado.numeroParcelas,
+      valorParcela: Number(resultado.valorParcela),
+      dataCompra: resultado.dataCompra,
+      primeiroMesRef: resultado.primeiroMesRef,
     };
-    }
+  }
 
-    async ativarDesativarCartao({ idUsuario, uuidCartao, ativar }) {
-      console.log("ativarDesativarCartao chamado com:", { idUsuario, uuidCartao, ativar });
-        const cartaoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario);
+  async ativarDesativarCartao({ idUsuario, uuidCartao, ativar }) {
+    const cartaoModel =
+      await this.cartoesRepositorio.buscarCartaoPorUuidEUsuarioAtivoOuInativo(
+        uuidCartao,
+        idUsuario
+      );
 
-        if (!cartaoModel) throw new naoEncontrado("Cartão não encontrado.");
+    if (!cartaoModel) throw new naoEncontrado("Cartão não encontrado.");
 
-        const cartaoEditado = await this.cartoesRepositorio.ativarDesativarCartao({
-            idCartao: cartaoModel.idCartao,
-            ativar,
-        });
+    const cartaoEditado = await this.cartoesRepositorio.ativarDesativarCartao({
+      idCartao: cartaoModel.idCartao,
+      ativar,
+    });
 
-        return { ativo: cartaoEditado.ativo };
-    }
+    return { ativo: cartaoEditado.ativo };
+  }
 }
