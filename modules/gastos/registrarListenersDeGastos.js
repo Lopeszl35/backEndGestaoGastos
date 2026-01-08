@@ -68,12 +68,13 @@ export default function registrarListenersDeGastos({
         categoria: dadosLancamento.categoria,
         valorTotal: gato.valor,
         dataCompra: dadosLancamento.data_gasto,
-        parcelado: false
+        parcelado: false,
       };
 
       await CartoesService.criarLancamentoCartao({
         idUsuario: id_usuario,
         uuidCartao: gasto.uuidCartao,
+        dadosLancamento,
       });
     }
   );
