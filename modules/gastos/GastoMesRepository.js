@@ -198,6 +198,7 @@ class GastoMesRepository {
         };
       }
     } catch (error) {
+      
       throw error;
     }
   }

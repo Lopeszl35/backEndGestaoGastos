@@ -3,7 +3,6 @@ import ErroValidacao from "../../errors/ValidationError.js";
 
 // helper para encerrar com erros padronizados
 function handleValidation(req, _res, next) {
-  console.log("Usuario recebido no validate: ", req.body);
   const errors = validationResult(req);
   if (!errors.isEmpty()) return next(new ErroValidacao(errors.array()));
   return next();
