@@ -1,12 +1,15 @@
 export const EVENTO_GASTO_INSERIDO = "GASTO_INSERIDO";
-export const EVENTO_FORMA_PAGAMENTO_CREDITO = "CARTAO_CREDITO";
+export const EVENTO_FORMA_PAGAMENTO_CREDITO = "CREDITO";
+
+// Função auxiliar para esperar (Sleep)
+const esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function registrarListenersDeGastos({
   barramentoEventos,
   gastoMesRepository,
   alertasService,
   userRepository,
-  CartoesService,
+  cartoesService,
 }) {
   if (!barramentoEventos) throw new Error("barramentoEventos não informado");
   if (!gastoMesRepository) throw new Error("gastoMesRepository não informado");
@@ -57,25 +60,70 @@ export default function registrarListenersDeGastos({
     }
   );
 
-  // 4) assossiar valor da compra da categoria ao cartão de crédito selecionado
-  barramentoEventos.registrarListener(
-    EVENTO_FORMA_PAGAMENTO_CREDITO,
-    async (payload) => {
-      const { id_usuario, gasto, connection } = payload;
+ // 4) Associar valor da compra ao cartão de crédito com Retry e Fallback
+ barramentoEventos.registrarListener(
+  EVENTO_FORMA_PAGAMENTO_CREDITO,
+  async (payload) => {
+    const { id_usuario, gasto } = payload; // connection não é necessário aqui, pois o service abre sua própria transaction
 
-      const dadosLancamento = {
-        descricao: gasto.descricao,
-        categoria: dadosLancamento.categoria,
-        valorTotal: gato.valor,
-        dataCompra: dadosLancamento.data_gasto,
-        parcelado: false,
-      };
+    // Validação de segurança (Fail Fast)
+    if (!gasto.uuidCartao) {
+      console.error("ERRO CRÍTICO: Gasto crédito sem uuidCartao.", gasto);
+      return;
+    }
 
-      await CartoesService.criarLancamentoCartao({
-        idUsuario: id_usuario,
-        uuidCartao: gasto.uuidCartao,
-        dadosLancamento,
-      });
+    const dadosLancamento = {
+      descricao: gasto.descricao,
+      categoria: gasto.categoria,
+      valorTotal: gasto.valor,
+      dataCompra: gasto.data_gasto,
+      parcelado: false, // Se tiver logica de parcelas no futuro, mapear aqui
+      numeroParcelas: 1,
+    };
+
+    // --- LÓGICA DE RETRY ---
+    const TENTATIVAS_MAXIMAS = 3;
+    let tentativa = 1;
+    let sucesso = false;
+
+    while (tentativa <= TENTATIVAS_MAXIMAS && !sucesso) {
+      try {
+        await cartoesService.criarLancamentoCartao({
+          idUsuario: id_usuario,
+          uuidCartao: gasto.uuidCartao,
+          dadosLancamento,
+        });
+        
+        sucesso = true;
+        console.log(`Lançamento cartão processado com sucesso na tentativa ${tentativa}.`);
+      
+      } catch (error) {
+        console.warn(`Tentativa ${tentativa} falhou: ${error.message}`);
+        
+        if (tentativa < TENTATIVAS_MAXIMAS) {
+          // Backoff Exponencial: Espera 1s, depois 2s, depois sai.
+          const tempoEspera = 1000 * Math.pow(2, tentativa - 1);
+          await esperar(tempoEspera);
+          tentativa++;
+        } else {
+          // --- FALHA TOTAL (FALLBACK) ---
+          console.error("Todas as tentativas de processar cartão falharam.");
+          
+          // Notificar o usuário que algo deu errado
+          // Assumindo que seu AlertasService tem um método genérico de criar alerta
+          try {
+            await alertasService.criarAlertaSistema({
+              id_usuario,
+              tipo_alerta: 'ERRO_PROCESSAMENTO',
+              mensagem: `Não foi possível vincular a despesa '${gasto.descricao}' ao seu cartão automaticamente. Verifique seus lançamentos.`,
+              severidade: 'ALTA'
+            });
+          } catch (erroAlerta) {
+            console.error("Falha até ao criar o alerta de erro:", erroAlerta);
+            }
+          }
+        }
+      }
     }
   );
 }
