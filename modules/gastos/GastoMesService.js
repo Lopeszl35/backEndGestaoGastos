@@ -2,6 +2,8 @@ import {
   EVENTO_GASTO_INSERIDO,
   EVENTO_FORMA_PAGAMENTO_CREDITO,
 } from "./registrarListenersDeGastos.js";
+import RequisicaoIncorreta from "../../errors/RequisicaoIncorreta.js";
+import { formatarDataParaBanco } from "../../utils/formatarDataParaBanco.js";
 
 export default class GastoMesService {
   constructor(GastoMesRepository, BarramentoEventos) {
@@ -52,13 +54,21 @@ export default class GastoMesService {
 
   async addGasto(gastos, id_usuario, connection) {
     try {
+      if (gastos.forma_pagamento === "CREDITO" && !gastos.uuidCartao) {
+        throw new RequisicaoIncorreta(
+          "Para lançamentos no Crédito, é obrigatório selecionar um Cartão."
+        );
+      }
+
+      gastos.data_gasto = formatarDataParaBanco(gastos.data_gasto);
+
       const result = await this.GastoMesRepository.addGasto(
         gastos,
         id_usuario,
         connection
       );
 
-      // Evento de domínio (listeners fazem efeitos colaterais)
+      // Eventos de domínio (listeners fazem efeitos colaterais)
       if (this.BarramentoEventos) {
         await this.BarramentoEventos.emitir(EVENTO_GASTO_INSERIDO, {
           id_usuario,
