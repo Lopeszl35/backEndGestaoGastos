@@ -32,5 +32,11 @@ router.patch(
   (req, res, next) => cartoesController.ativarDesativarCartao(req, res, next)
 );
 
+// rota para editar cartão
+router.put(
+  "/editarCartoes/:id_usuario/:cartao_uuid",
+  (req, res, next) => cartoesController.editarCartao(req, res, next)
+);
+
   return router;
 }

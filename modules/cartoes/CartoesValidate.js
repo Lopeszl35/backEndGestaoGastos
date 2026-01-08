@@ -133,3 +133,40 @@ export const ativarDesativarCartaoValidate = [
   validarRequisicao,
 ];
 
+export const editarCartaoValidate = [
+  param("id_usuario").notEmpty().isInt({ min: 1 }).withMessage("id_usuario inválido."),
+  param("cartao_uuid").notEmpty().isUUID().withMessage("cartao_uuid inválido."),
+
+  body("nome")
+    .optional({ nullable: true })
+    .isString().withMessage("O nome deve ser texto.")
+    .isLength({ min: 2, max: 80 }).withMessage("O nome deve ter entre 2 e 80 caracteres."),
+
+  body("bandeira")
+    .optional({ nullable: true })
+    .isString().withMessage("A bandeira deve ser texto.")
+    .isLength({ min: 2, max: 30 }).withMessage("A bandeira deve ter até 30 caracteres."),
+
+  body("ultimos4")
+    .optional({ nullable: true })
+    .matches(/^\d{4}$/).withMessage("ultimos4 deve conter exatamente 4 dígitos."),
+
+  body("corHex")
+    .optional({ nullable: true })
+    .matches(/^#([0-9a-fA-F]{6})$/).withMessage("corHex deve estar no formato #RRGGBB."),
+
+  body("limite")
+    .optional({ nullable: true })
+    .isFloat({ min: 0 }).withMessage("O limite deve ser um número >= 0."),
+
+  body("diaFechamento")
+    .optional({ nullable: true })
+    .isInt({ min: 1, max: 28 }).withMessage("O diaFechamento deve estar entre 1 e 28."),
+
+  body("diaVencimento")
+    .optional({ nullable: true })
+    .isInt({ min: 1, max: 28 }).withMessage("O diaVencimento deve estar entre 1 e 28."),
+
+  validarRequisicao,
+]
+

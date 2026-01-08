@@ -88,4 +88,29 @@ export class CartoesController {
       }
   }
 
+  async editarCartao(req, res, next) {
+    try {
+      const idUsuario = Number(req.params.id_usuario);
+      const uuidCartao = String(req.params.cartao_uuid);
+
+      const resultado = await this.cartoesService.editarCartao({
+        idUsuario,
+        uuidCartao,
+        dadosCartao: {
+          nome: req.body.nome,
+          bandeira: req.body.bandeira,
+          ultimos4: req.body.ultimos4,
+          corHex: req.body.corHex,
+          limite: req.body.limite,
+          diaFechamento: req.body.diaFechamento,
+          diaVencimento: req.body.diaVencimento,
+        },
+      });
+
+      return res.status(200).json(resultado);
+    } catch (erro) {
+      next(erro);
+    }
+  }
+
 }
