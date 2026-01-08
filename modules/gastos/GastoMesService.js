@@ -2,6 +2,7 @@ import {
   EVENTO_GASTO_INSERIDO,
   EVENTO_FORMA_PAGAMENTO_CREDITO,
 } from "./registrarListenersDeGastos.js";
+
 export default class GastoMesService {
   constructor(GastoMesRepository, BarramentoEventos) {
     this.GastoMesRepository = GastoMesRepository;
@@ -67,11 +68,10 @@ export default class GastoMesService {
         });
       }
 
-      if (gastos.forma_pagamento === "CARTAO_CREDITO") {
+      if (gastos.forma_pagamento === "CREDITO") {
         await this.BarramentoEventos.emitir(EVENTO_FORMA_PAGAMENTO_CREDITO, {
           id_usuario,
-          gastos,
-          connection,
+          gasto: gastos,
         });
       }
       return result;
