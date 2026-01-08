@@ -1,6 +1,7 @@
 import { CartaoCreditoModel } from "./cartoesCredito/CartaoCreditoModel.js";
 import { CartaoFaturaModel } from "./cartoesCredito/CartaoFaturaModel.js";
 import { CartaoLancamentoModel } from "./cartoesCredito/CartaoLancamentoModel.js";
+import { AlertaModel } from "./alertas/AlertaModel.js";
 
 export function configurarRelacionamentosModelos() {
   CartaoCreditoModel.hasMany(CartaoFaturaModel, {
@@ -14,4 +15,9 @@ export function configurarRelacionamentosModelos() {
   });
 }
 
-export { CartaoCreditoModel, CartaoFaturaModel, CartaoLancamentoModel };
+export {
+  CartaoCreditoModel,
+  CartaoFaturaModel,
+  CartaoLancamentoModel,
+  AlertaModel,
+};
