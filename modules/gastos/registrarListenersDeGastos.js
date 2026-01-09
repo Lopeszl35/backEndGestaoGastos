@@ -79,7 +79,9 @@ export default function registrarListenersDeGastos({
       let nomeCategoria = "Outros"
       try {
         if (gasto.id_categoria && categoriasRepository) {
+          console.log("entrou no if, gastos recebido: ", gasto.id_categoria);
           const catDb = await categoriasRepository.buscarPorId(gasto.id_categoria, id_usuario);
+          console.log("catDb: ", catDb);
           if (catDb && catDb.nome) {
             nomeCategoria = catDb.nome
           }

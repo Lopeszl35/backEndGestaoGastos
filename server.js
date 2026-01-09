@@ -282,7 +282,7 @@ const loadDependencies = async () => {
       alertasService: DependencyInjector.get("AlertasService"),
       userRepository: DependencyInjector.get("UserRepository"),
       cartoesService: DependencyInjector.get("CartoesService"),
-      CategoriasRepository: DependencyInjector.get("CategoriasRepository"),
+      categoriasRepository: DependencyInjector.get("CategoriasRepository"),
     });
 
     console.log("Todas as dependências foram registradas!");
