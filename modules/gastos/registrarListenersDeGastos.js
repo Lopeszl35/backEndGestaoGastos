@@ -1,3 +1,5 @@
+import { formatarDataParaBanco } from "../../utils/formatarDataParaBanco.js";
+
 export const EVENTO_GASTO_INSERIDO = "GASTO_INSERIDO";
 export const EVENTO_FORMA_PAGAMENTO_CREDITO = "CREDITO";
 
@@ -90,11 +92,13 @@ export default function registrarListenersDeGastos({
         console.warn(`Erro ao buscar categoria do gasto: ${error.message}`);
       }
 
+     const dataFormatada = String(gasto.data_gasto).replace(/\//g, "-");
+
       const dadosLancamento = {
         descricao: gasto.descricao,
         categoria: nomeCategoria,
         valorTotal: gasto.valor,
-        dataCompra: gasto.data_gasto,
+        dataCompra: dataFormatada,
         parcelado: false,
         numeroParcelas: 1,
       };
