@@ -149,5 +149,23 @@ export default class CategoriasRepository {
       throw error;
     }
   }
+
+  async buscarPorId(id_categoria, id_usuario) {
+    const sql = `
+            SELECT * 
+            FROM categorias_gastos 
+            WHERE id_categoria = ? 
+            AND id_usuario = ?;
+        `;
+    const params = [id_categoria, id_usuario];
+    try {
+      const result = await this.database.executaComando(sql, params);
+      return result[0];
+    } catch (error) {
+      console.error("Erro no CategoriasRepository.buscarPorId:", error.message);
+      ErroSqlHandler.tratarErroSql(error);
+      throw error;
+    }
+  }
   
 }

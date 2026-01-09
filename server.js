@@ -75,15 +75,12 @@ const loadDependencies = async () => {
     const { default: TransactionUtil } = await import(
       "./utils/TransactionUtil.js"
     );
-    DependencyInjector.register(
-      "TransactionUtil",
+    DependencyInjector.register("TransactionUtil",
       new TransactionUtil(DependencyInjector.get("Database"))
     );
 
     // Registra Barramento de Eventos (domain events)
-    const { default: BarramentoEventos } = await import(
-      "./utils/BarramentoEventos.js"
-    );
+    const { default: BarramentoEventos } = await import("./utils/BarramentoEventos.js");
     DependencyInjector.register("BarramentoEventos", new BarramentoEventos());
     console.log("BarramentoEventos registrado com sucesso.");
 
@@ -121,12 +118,8 @@ const loadDependencies = async () => {
       "CartoesService",
       new CartoesService({
         cartoesRepositorio: DependencyInjector.get("CartoesRepositorioORM"),
-        faturasRepositorio: DependencyInjector.get(
-          "CartaoFaturasRepositorioORM"
-        ),
-        lancamentosRepositorio: DependencyInjector.get(
-          "CartaoLancamentosRepositorioORM"
-        ),
+        faturasRepositorio: DependencyInjector.get("CartaoFaturasRepositorioORM"),
+        lancamentosRepositorio: DependencyInjector.get("CartaoLancamentosRepositorioORM"),
       })
     );
 
@@ -288,7 +281,8 @@ const loadDependencies = async () => {
       gastoMesRepository: DependencyInjector.get("GastoMesRepository"),
       alertasService: DependencyInjector.get("AlertasService"),
       userRepository: DependencyInjector.get("UserRepository"),
-      CartoesService: DependencyInjector.get("CartoesService"),
+      cartoesService: DependencyInjector.get("CartoesService"),
+      CategoriasRepository: DependencyInjector.get("CategoriasRepository"),
     });
 
     console.log("Todas as dependências foram registradas!");
