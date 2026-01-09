@@ -174,8 +174,8 @@ class GastoMesRepository {
 
   async addGasto(gastos, id_usuario, connection) {
     const sql = `
-            INSERT INTO gastos (id_categoria, id_usuario, valor, data_gasto, descricao) 
-            VALUES (?, ?, ?, ?, ?);
+            INSERT INTO gastos (id_categoria, id_usuario, valor, data_gasto, descricao, forma_pagamento) 
+            VALUES (?, ?, ?, ?, ?, ?);
         `;
     const params = [
       gastos.id_categoria,
@@ -183,6 +183,7 @@ class GastoMesRepository {
       gastos.valor,
       gastos.data_gasto,
       gastos.descricao || null, // Campo opcional
+      gastos.forma_pagamento || null,
     ];
 
     try {
