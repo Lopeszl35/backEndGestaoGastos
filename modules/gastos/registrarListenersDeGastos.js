@@ -10,6 +10,7 @@ export default function registrarListenersDeGastos({
   alertasService,
   userRepository,
   cartoesService,
+  categoriasRepository,
 }) {
   if (!barramentoEventos) throw new Error("barramentoEventos não informado");
   if (!gastoMesRepository) throw new Error("gastoMesRepository não informado");
@@ -64,7 +65,7 @@ export default function registrarListenersDeGastos({
   barramentoEventos.registrarListener(
     EVENTO_FORMA_PAGAMENTO_CREDITO,
     async (payload) => {
-      const { id_usuario, gasto } = payload; // connection não é necessário aqui, pois o service abre sua própria transaction
+      const { id_usuario, gasto } = payload; 
       console.log("Entrou em gasto credito");
 
       // Validação de segurança (Fail Fast)
@@ -73,14 +74,29 @@ export default function registrarListenersDeGastos({
         return;
       }
 
+      // -- Buscando categoria no banco
+      // O 'gasto' vem apenas com id_categoria (ex: 8). Precisamos do nome (ex: "Lazer").
+      let nomeCategoria = "Outros"
+      try {
+        if (gasto.id_categoria && categoriasRepository) {
+          const catDb = await categoriasRepository.buscarPorId(gasto.id_categoria, id_usuario);
+          if (catDb && catDb.nome) {
+            nomeCategoria = catDb.nome
+          }
+        }
+      } catch (error) {
+        console.warn(`Erro ao buscar categoria do gasto: ${error.message}`);
+      }
+
       const dadosLancamento = {
         descricao: gasto.descricao,
-        categoria: gasto.categoria,
+        categoria: nomeCategoria,
         valorTotal: gasto.valor,
         dataCompra: gasto.data_gasto,
-        parcelado: false, // Se tiver logica de parcelas no futuro, mapear aqui
+        parcelado: false,
         numeroParcelas: 1,
       };
+      console.log("dadosLancamento: ", dadosLancamento);
 
       // --- LÓGICA DE RETRY ---
       const TENTATIVAS_MAXIMAS = 3;
