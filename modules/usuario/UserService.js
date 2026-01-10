@@ -4,6 +4,7 @@ import Auth from "../../auth/auth.js";
 import AuthResponseDTO from "./AuthResponseDTO.js";
 import { hashPassword } from "../../auth/passwordHash.js";
 import { UsuarioEntity } from "./domain/UsuarioEntity.js";
+import { sequelize } from "../../database/sequelize.js";
 
 class UserService {
   constructor(UserRepository) {
@@ -11,10 +12,12 @@ class UserService {
   }
 
   async createUser(userDataInput) {
+    const transaction = await sequelize.transaction();
     try {
+
       // Hash da senha antes de salvar
       const senhaHash = await hashPassword(userDataInput.senha_hash);
-      console.log("Senha hash: ", userDataInput.senha_hash);
+      console.log("Senha hash: ", senhaHash);
 
       // Chama a Entity para criar o usuário
       const novoUsuario = new UsuarioEntity({
@@ -22,14 +25,24 @@ class UserService {
         senha_hash: senhaHash
       })
 
-      // Salva no banco
-      const resultModel = await this.UserRepository.createUser(novoUsuario.toPersistence());
+     // 3. Persiste no Banco (Passando a transaction)
+      const resultModel = await this.UserRepository.createUser(
+        novoUsuario.toPersistence(), 
+        transaction
+      );
 
-      // Retorna formato público (com saldo_atual) + insertId para compatibilidade
-      const publicData = new UsuarioEntity(resultModel).toPublicDTO();
+      // 4 commit da transação
+      await transaction.commit();
+
+      // 5. Prepara o retorno
+      // CORREÇÃO: Não instanciamos 'new UsuarioEntity' de novo com o resultado do banco
+      // para evitar erros de validação com dados formatados pelo Sequelize.
+      // Atualizamos a entidade que já temos em memória com o ID gerado e retornamos.
+      novoUsuario.id_usuario = resultModel.insertId;
+
       return { 
           insertId: resultModel.insertId, 
-          ...publicData 
+          ...novoUsuario.toPublicDTO() 
       };
       
     } catch (error) {
@@ -47,6 +60,7 @@ class UserService {
   }
 
   async atualizarUsuario(userId, updatesDto) {
+    console.log("updatesDto: ", updatesDto);
     // whitelist e mapeamento para o Model
     const payload = {};
 
@@ -60,6 +74,7 @@ class UserService {
     if (updatesDto.senha !== undefined) {
       payload.senhaHash = await hashPassword(updatesDto.senha);
     }
+    console.log("payload: ", payload);
 
     if (Object.keys(payload).length === 0) {
       return { affectedRows: 0, message: "Nenhum campo para atualizar." };

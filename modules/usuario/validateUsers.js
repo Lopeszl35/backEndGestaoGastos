@@ -126,7 +126,7 @@ export const validateGetUserSaldo = [
 ];
 
 export const validateUserSaldo = [
-  body("userID")
+  body("userId")
     .trim()
     .exists({ checkFalsy: true })
     .withMessage("ID do usuário não fornecido")

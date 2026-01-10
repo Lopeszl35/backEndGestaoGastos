@@ -13,6 +13,7 @@ export class UsuarioEntity {
     salario_mensal,
     saldo_inicial,
     saldo_atual,
+    saldoAtual,
     data_cadastro,
   }) {
     this.id_usuario = id_usuario;
