@@ -385,11 +385,11 @@ export class CartoesService {
     return { ativo: cartaoEditado.ativo };
   }
 
-  async pagarFatura({ idUsuario, idCartao, valorPagamento, transaction }) {
+  async pagarFatura({ idUsuario, idCartao, valorPagamento, ano, mes, transaction }) {
     
     const operacaoPagamento = async (t) => {
         // 1. Buscar Fatura
-        const fatura = await this.faturasRepositorio.buscarFaturaAtual(idCartao, idUsuario, t);
+        const fatura = await this.faturasRepositorio.buscarFaturaAtual(idCartao, idUsuario, ano, mes, t);
         
         if (!fatura) throw new naoEncontrado("Fatura não encontrada.");
         if (fatura.status === 'PAGA') throw new RequisicaoIncorreta("Esta fatura já está quitada.");
