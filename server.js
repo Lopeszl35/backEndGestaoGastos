@@ -120,6 +120,7 @@ const loadDependencies = async () => {
         cartoesRepositorio: DependencyInjector.get("CartoesRepositorioORM"),
         faturasRepositorio: DependencyInjector.get("CartaoFaturasRepositorioORM"),
         lancamentosRepositorio: DependencyInjector.get("CartaoLancamentosRepositorioORM"),
+        barramentoEventos: DependencyInjector.get("BarramentoEventos"),
       })
     );
 
@@ -272,7 +273,7 @@ const loadDependencies = async () => {
       )
     );
 
-    // Registra listeners de domínio (gastos) (NOVO)
+    // Registra listeners de domínio (gastos)
     const { default: registrarListenersDeGastos } = await import(
       "./modules/gastos/registrarListenersDeGastos.js"
     );
@@ -283,6 +284,15 @@ const loadDependencies = async () => {
       userRepository: DependencyInjector.get("UserRepository"),
       cartoesService: DependencyInjector.get("CartoesService"),
       categoriasRepository: DependencyInjector.get("CategoriasRepository"),
+    });
+
+    // Registra listeners de domínio (cartões)
+    const { default: registrarListenersDeCartoes } = await import(
+      "./modules/cartoes/registrarListenersDeCartoes.js"
+    );
+    registrarListenersDeCartoes({
+      barramentoEventos: DependencyInjector.get("BarramentoEventos"),
+      userService: DependencyInjector.get("UserService"),
     });
 
     console.log("Todas as dependências foram registradas!");
