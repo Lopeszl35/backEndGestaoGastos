@@ -137,7 +137,7 @@ const loadDependencies = async () => {
     console.log("UserRepository registrado com sucesso.");
 
     const { default: CategoriasRepository } = await import(
-      "./modules/categories/categoriasRepository.js"
+      "./modules/categorias/categoriasRepository.js"
     );
     DependencyInjector.register(
       "CategoriasRepository",
@@ -191,7 +191,7 @@ const loadDependencies = async () => {
     console.log("UserService registrado com sucesso.");
 
     const { default: CategoriasService } = await import(
-      "./modules/categories/CategoriasService.js"
+      "./modules/categorias/CategoriasService.js"
     );
     DependencyInjector.register(
       "CategoriasService",
@@ -232,7 +232,7 @@ const loadDependencies = async () => {
       )
     );
     const { default: CategoriasController } = await import(
-      "./modules/categories/categoriasController.js"
+      "./modules/categorias/categoriasController.js"
     );
     DependencyInjector.register(
       "CategoriasController",
@@ -320,7 +320,7 @@ const initializeServer = async () => {
     const userController = DependencyInjector.get("UserController");
 
     const { default: CategoriasRoutes } = await import(
-      "./modules/categories/CategoriasRoutes.js"
+      "./modules/categorias/CategoriasRoutes.js"
     );
     const categoriasController = DependencyInjector.get("CategoriasController");
 
