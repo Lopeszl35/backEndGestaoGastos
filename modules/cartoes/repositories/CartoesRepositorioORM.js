@@ -74,5 +74,12 @@ export class CartoesRepositorioORM {
     return cartao;
   }
 
+  async restaurarLimite({ idCartao, valor }) {
+    const cartao = await CartaoCreditoModel.findByPk(idCartao);
+    cartao.limite = cartao.limite + valor;
+    await cartao.save();
+    return cartao;
+  }
+
 }
 

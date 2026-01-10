@@ -170,3 +170,17 @@ export const editarCartaoValidate = [
   validarRequisicao,
 ]
 
+export const pagarFaturaValidate = [
+  param("id_usuario").notEmpty().isInt({ min: 1 }).withMessage("id_usuario inválido."),
+  param("id_cartao").notEmpty().isInt({ min: 1 }).withMessage("id_cartao inválido."),
+
+  body("valorPagamento")
+    .notEmpty()
+    .isFloat({ min: 0.01 })
+    .withMessage("valor do pagamento inválido."),
+  body("ano").notEmpty().isInt({ min: 2000, max: 2100 }).withMessage("ano inválido."),
+  body("mes").notEmpty().isInt({ min: 1, max: 12 }).withMessage("mês inválido."),
+
+  validarRequisicao
+]
+
