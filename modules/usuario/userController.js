@@ -9,6 +9,7 @@ class UserController {
 
   async createUser(req, res, next) {
     const { user } = req.body;
+    console.log("user recebido no controller: ", user);
     try {
       const response = await this.UserService.createUser(user);
       if (!response.insertId) {
@@ -27,11 +28,11 @@ class UserController {
   async atualizarUsuario(req, res, next) {
     try {
       const { userId } = req.params;
-      const updates = req.body;
+      const { user } = req.body;
 
       const result = await this.UserService.atualizarUsuario(
         Number(userId),
-        updates
+        user
       );
 
       res.status(200).json({

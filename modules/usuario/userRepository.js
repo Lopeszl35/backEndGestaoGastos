@@ -17,11 +17,16 @@ class UserRepository {
   /**
    * Cria um usuário no banco de dados.
    */
-  async createUser(user) {
-    // user já vem formatado pelo toPersistence() da Entity
+  async createUser(user, transaction) {
     try {
-      const novoUsuario = await UsuarioModel.create(user);
-      return { insertId: novoUsuario.idUsuario, result: novoUsuario.toJSON() };
+      // Passando a transação para o create do Sequelize
+      const novoUsuario = await UsuarioModel.create(user, { transaction });
+      
+      // Retorna formato compatível
+      return { 
+        insertId: novoUsuario.idUsuario, 
+        result: novoUsuario.toJSON() 
+      };
     } catch (error) {
       throw error;
     }
@@ -56,6 +61,7 @@ class UserRepository {
   }
 
   async atualizarUserSaldo(userId, novoSaldo) {
+    console.log("user id para atualizar: ", userId);
     try {
       const [linhasAfetadas] = await UsuarioModel.update(
         { saldoAtual: novoSaldo },
