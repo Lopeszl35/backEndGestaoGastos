@@ -4,48 +4,59 @@ import { sequelize } from "../../sequelize.js";
 export class CategoriasModel extends Model {}
 
 CategoriasModel.init(
-    {
-        id_categoria: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true,
-        },
-        id_usuario: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        nome: {
-            type: DataTypes.STRING(100),
-            allowNull: false,
-        },
-        limite: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: true,
-        },
-        ativo: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true,
-        },
-        data_criacao: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: DataTypes.NOW,
-        },
-        updated_at: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: DataTypes.NOW,
-        },
-        inativado_em: {
-            type: DataTypes.DATE,
-            allowNull: true,
-        },
+  {
+    idCategoria: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      field: "id_categoria",
     },
-    {
-        sequelize,
-        trableName: "categorias_gastos",
-    }
-)
-
-export default CategoriasModel
+    idUsuario: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: "id_usuario",
+    },
+    nome: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    nomeNormalizado: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: "nome_normalizado", 
+    },
+    limite: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    ativo: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    dataCriacao: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: "data_criacao",
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: "updated_at",
+    },
+    inativadoEm: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: "inativado_em",
+    },
+  },
+  {
+    sequelize,
+    tableName: "categorias_gastos", 
+    timestamps: true, 
+    createdAt: "dataCriacao",
+    updatedAt: "updatedAt",   
+  }
+);
