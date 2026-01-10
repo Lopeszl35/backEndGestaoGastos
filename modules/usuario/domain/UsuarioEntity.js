@@ -1,0 +1,94 @@
+import ValidationError from "../../../errors/ValidationError.js";
+import RequisicaoIncorreta from "../../../errors/RequisicaoIncorreta.js";
+
+export class UsuarioEntity {
+  constructor({
+    id_usuario,
+    nome,
+    email,
+    senha_hash,
+    perfil_financeiro,
+    salario_mensal,
+    saldo_inicial,
+    saldo_atual,
+    data_cadastro,
+  }) {
+    this.id_usuario = id_usuario;
+    this.nome = this.#validarNome(nome);
+    this.email = this.#validarEmail(email);
+    this.senha_hash = senha_hash; // O hash é gerado antes ou no setter, mas a entidade guarda o estado
+    this.perfil_financeiro = perfil_financeiro || "moderado";
+    
+    // Normalização de valores numéricos
+    this.salario_mensal = this.#normalizarValor(salario_mensal);
+    this.saldo_inicial = this.#normalizarValor(saldo_inicial);
+    
+    // Regra: Se saldo_atual não for informado na criação, assume o saldo_inicial
+    this.saldo_atual = saldo_atual !== undefined 
+      ? this.#normalizarValor(saldo_atual) 
+      : this.saldo_inicial;
+
+    this.data_cadastro = data_cadastro;
+  }
+
+  // --- Comportamentos de Domínio (Business Logic) ---
+
+  /**
+   * Debita um valor do saldo do usuário.
+   * Lança erro se o saldo for insuficiente.
+   */
+  debitarSaldo(valor) {
+    const valorNum = Number(valor);
+    if (valorNum <= 0) throw new ValidationError("O valor do débito deve ser positivo.");
+
+    // REGRA DE NEGÓCIO: Não permitir saldo negativo (se for essa a regra do seu app)
+    if (this.saldo_atual < valorNum) {
+      throw new RequisicaoIncorreta(
+        `Saldo insuficiente. Saldo atual: R$${this.saldo_atual.toFixed(2)}, Tentativa: R$${valorNum.toFixed(2)}`
+      );
+    }
+
+    this.saldo_atual -= valorNum;
+  }
+
+  aumentarSaldo(valor) {
+    const valorNum = Number(valor);
+    if (valorNum <= 0) throw new ValidationError("O valor do depósito deve ser positivo.");
+    this.saldo_atual += valorNum;
+  }
+
+  // --- Validações Privadas ---
+
+  #validarNome(nome) {
+    if (!nome || nome.trim().length < 3) {
+      throw new ValidationError("O nome deve ter pelo menos 3 caracteres.");
+    }
+    return nome.trim();
+  }
+
+  #validarEmail(email) {
+    if (!email || !email.includes("@")) {
+      throw new ValidationError("E-mail inválido.");
+    }
+    return email.trim().toLowerCase();
+  }
+
+  #normalizarValor(valor) {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0.0;
+  }
+
+  // Método para exportar dados para o Repository salvar
+  toJSON() {
+    return {
+      id_usuario: this.id_usuario,
+      nome: this.nome,
+      email: this.email,
+      senha_hash: this.senha_hash,
+      perfil_financeiro: this.perfil_financeiro,
+      salario_mensal: this.salario_mensal,
+      saldo_inicial: this.saldo_inicial,
+      saldo_atual: this.saldo_atual,
+    };
+  }
+}

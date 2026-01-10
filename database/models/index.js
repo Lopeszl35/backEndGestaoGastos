@@ -2,6 +2,7 @@ import { CartaoCreditoModel } from "./cartoesCredito/CartaoCreditoModel.js";
 import { CartaoFaturaModel } from "./cartoesCredito/CartaoFaturaModel.js";
 import { CartaoLancamentoModel } from "./cartoesCredito/CartaoLancamentoModel.js";
 import { AlertaModel } from "./alertas/AlertaModel.js";
+import { UsuarioModel } from "./usuario/UsuarioModel.js";
 
 export function configurarRelacionamentosModelos() {
   CartaoCreditoModel.hasMany(CartaoFaturaModel, {
@@ -13,6 +14,16 @@ export function configurarRelacionamentosModelos() {
     foreignKey: "id_cartao",
     sourceKey: "idCartao",
   });
+
+  UsuarioModel.hasMany(CartaoCreditoModel, {
+    foreignKey: "id_usuario",
+    sourceKey: "idUsuario",
+  });
+
+  CartaoCreditoModel.belongsTo(UsuarioModel, {
+    foreignKey: "id_usuario",
+    targetKey: "idUsuario",
+  });
 }
 
 export {
@@ -20,4 +31,5 @@ export {
   CartaoFaturaModel,
   CartaoLancamentoModel,
   AlertaModel,
+  UsuarioModel,
 };

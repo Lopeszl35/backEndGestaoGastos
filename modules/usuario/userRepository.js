@@ -1,35 +1,24 @@
-import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
+import { UsuarioModel } from "../../database/models/index.js";
 import NaoEncontrado from "../../errors/naoEncontrado.js";
+import { Op } from "sequelize";
 
 class UserRepository {
-  constructor(Database) {
-    this.Database = Database;
-  }
+ constructor() {}
 
   async diminuirSaldoAtual({ id_usuario, valor, connection }) {
-    const sql = `
-            UPDATE usuarios
-            SET saldo_atual = saldo_atual - ?
-            WHERE id_usuario = ?
-            AND saldo_atual >= ?;
-        `;
-
-    const params = [Number(valor), Number(id_usuario), Number(valor)];
-
     try {
-      if (connection) {
-        const [result] = await connection.query(sql, params);
-
-        if (result.affectedRows === 0) {
-          const erro = new Error("Saldo insuficiente para realizar o gasto.");
-          erro.code = "SALDO_INSUFICIENTE";
-          throw erro;
-        }
-
-        return { mensagem: "Saldo atualizado com sucesso." };
+      const usuario = await UsuarioModel.findByPk(id_usuario, {
+        transaction: connection,
+      });
+      if (!usuario) {
+        throw new NaoEncontrado("Usuário nao encontrado.");
       }
+      
+      await usuario.decrement("saldo_atual", { by: valor, transaction: connection });
 
-      return { mensagem: "Saldo atualizado com sucesso." };
+      await usuario.reload({ transaction: connection });
+      return usuario;
+
     } catch (error) {
       console.error(
         "Erro no UserRepository.diminuirSaldoAtual:",
