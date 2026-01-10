@@ -10,9 +10,7 @@ class UserController {
   async createUser(req, res, next) {
     const { user } = req.body;
     try {
-      const response = await this.UserService.createUser(
-        new UserPublicDTO(user)
-      );
+      const response = await this.UserService.createUser(user);
       if (!response.insertId) {
         throw new Error("Erro ao criar o usuário: " + JSON.stringify(response));
       }
@@ -74,7 +72,7 @@ class UserController {
     const { userId } = req.body;
     try {
       const saldo = await this.UserService.getUserSaldo(userId);
-      res.status(200).json({ saldo });
+      res.status(200).json( saldo );
     } catch (error) {
       next(error);
     }
@@ -83,7 +81,6 @@ class UserController {
   async atualizarUserSaldo(req, res, next) {
     try {
       const { userId, saldo } = req.body;
-      console.log("Saldo recebido no controller:", saldo);
       const result = await this.UserService.atualizarUserSaldo(userId, saldo);
       res.status(200).json(result);
     } catch (erro) {

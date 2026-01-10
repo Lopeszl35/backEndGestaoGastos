@@ -3,20 +3,35 @@ import { generateToken } from "../../auth/token.js";
 import Auth from "../../auth/auth.js";
 import AuthResponseDTO from "./AuthResponseDTO.js";
 import { hashPassword } from "../../auth/passwordHash.js";
+import { UsuarioEntity } from "./domain/UsuarioEntity.js";
 
 class UserService {
   constructor(UserRepository) {
     this.UserRepository = UserRepository;
   }
 
-  async createUser(user) {
+  async createUser(userDataInput) {
     try {
       // Hash da senha antes de salvar
-      user.senha_hash = await hashPassword(user.senha_hash);
-      console.log("Senha hash: ", user.senha_hash);
-      // Chama o repositório para criar o usuário
-      const response = await this.UserRepository.createUser(user);
-      return response;
+      const senhaHash = await hashPassword(userDataInput.senha_hash);
+      console.log("Senha hash: ", userDataInput.senha_hash);
+
+      // Chama a Entity para criar o usuário
+      const novoUsuario = new UsuarioEntity({
+        ...userDataInput,
+        senha_hash: senhaHash
+      })
+
+      // Salva no banco
+      const resultModel = await this.UserRepository.createUser(novoUsuario.toPersistence());
+
+      // Retorna formato público (com saldo_atual) + insertId para compatibilidade
+      const publicData = new UsuarioEntity(resultModel).toPublicDTO();
+      return { 
+          insertId: resultModel.insertId, 
+          ...publicData 
+      };
+      
     } catch (error) {
       throw error;
     }
@@ -32,21 +47,20 @@ class UserService {
   }
 
   async atualizarUsuario(userId, updatesDto) {
-    // whitelist total (regra de negócio aqui)
+    // whitelist e mapeamento para o Model
     const payload = {};
 
     if (updatesDto.nome !== undefined) payload.nome = updatesDto.nome;
     if (updatesDto.email !== undefined) payload.email = updatesDto.email;
     if (updatesDto.perfil_financeiro !== undefined)
-      payload.perfil_financeiro = updatesDto.perfil_financeiro;
+      payload.perfilFinanceiro = updatesDto.perfil_financeiro;
     if (updatesDto.salario_mensal !== undefined)
-      payload.salario_mensal = updatesDto.salario_mensal;
+      payload.salarioMensal = updatesDto.salario_mensal;
 
     if (updatesDto.senha !== undefined) {
-      payload.senha_hash = await hashPassword(updatesDto.senha);
+      payload.senhaHash = await hashPassword(updatesDto.senha);
     }
 
-    // nada pra atualizar
     if (Object.keys(payload).length === 0) {
       return { affectedRows: 0, message: "Nenhum campo para atualizar." };
     }
@@ -56,13 +70,17 @@ class UserService {
 
   async loginUser(email, senha) {
     try {
-      const user = await this.UserRepository.getUserByEmail(email);
-      if (!user) {
+      const userModel = await this.UserRepository.getUserByEmail(email);
+      if (!userModel) {
         throw new NaoEncontrado("Usuário nao encontrado");
       } else {
-        await Auth.senhaValida(senha, user.senha_hash);
-        const token = generateToken(user);
-        return new AuthResponseDTO(user, token);
+        await Auth.senhaValida(senha, userModel.senhaHash);
+        
+        // Converter para Entity para gerar DTO correto
+        const entity = new UsuarioEntity(userModel);
+        const token = generateToken(entity.toPublicDTO());
+        
+        return new AuthResponseDTO(userModel, token);
       }
     } catch (error) {
       console.log("Erro ao logar o usuário no service:", error.message);
@@ -98,19 +116,24 @@ class UserService {
 
   async diminuirSaldoAtualAposPagarFaturaCartao({ id_usuario, valor, connection }) {
     try {
-      // regra de negócio
-      const saldoAtual = await this.UserRepository.getSaldoAtual(id_usuario, connection);
-      if (saldoAtual < Number(valor)) {
-        const erro = new Error("Saldo insuficiente para realizar o gasto.");
-        erro.code = "SALDO_INSUFICIENTE";
-        throw erro;
-      }
-      const saldoAtualizado = await this.UserRepository.diminuirSaldoAtual({
-        id_usuario,
-        valor,
-        connection,
-      });
-      return saldoAtualizado;
+      // 1. Busca com LOCK
+      const userModel = await this.UserRepository.getUserById(id_usuario, connection, true);
+      if (!userModel) throw new NaoEncontrado("Usuário não encontrado.");
+
+      // 2. Hidrata Entidade
+      const entity = new UsuarioEntity(userModel);
+
+      // 3. Regra de Negócio (Valida saldo < valor)
+      entity.debitarSaldo(valor);
+
+      // 4. Persiste alteração
+      await this.UserRepository.atualizarUsuario(
+        id_usuario, 
+        { saldoAtual: entity.saldo_atual }, 
+        connection
+      );
+      
+      return { mensagem: "Saldo atualizado com sucesso." };
     } catch (error) {
       console.log(
         "Erro ao diminuir o saldo do usuário no modelo:",
@@ -122,8 +145,9 @@ class UserService {
 
   async getUser(userId) {
     try {
-      const userData = await this.UserRepository.getUser(userId);
-      return userData;
+      const userData = await this.UserRepository.getUserById(userId);
+      // Mapeamento reverso (Model -> DTO) se necessário
+      return userData ? this._mapToDTO(userData) : null;
     } catch (error) {
       console.log(
         "Erro ao obter os dados do usuário no modelo:",
@@ -136,7 +160,7 @@ class UserService {
   async getUserData(userId) {
     try {
       const userData = await this.UserRepository.getUserById(userId);
-      return userData;
+      return userData ? this._mapToDTO(userData) : null;
     } catch (error) {
       console.log(
         "Erro ao obter os dados do usuário no modelo:",
@@ -144,6 +168,20 @@ class UserService {
       );
       throw error;
     }
+  }
+
+  // Helper privado para manter compatibilidade de retorno snake_case
+  _mapToDTO(modelData) {
+      return {
+          id_usuario: modelData.idUsuario,
+          nome: modelData.nome,
+          email: modelData.email,
+          perfil_financeiro: modelData.perfilFinanceiro,
+          salario_mensal: modelData.salarioMensal,
+          saldo_atual: modelData.saldoAtual,
+          saldo_inicial: modelData.saldoInicial,
+          data_cadastro: modelData.dataCadastro
+      };
   }
 }
 

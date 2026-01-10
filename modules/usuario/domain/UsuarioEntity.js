@@ -4,9 +4,11 @@ import RequisicaoIncorreta from "../../../errors/RequisicaoIncorreta.js";
 export class UsuarioEntity {
   constructor({
     id_usuario,
+    idUsuario,
     nome,
     email,
     senha_hash,
+    senhaHash,
     perfil_financeiro,
     salario_mensal,
     saldo_inicial,
@@ -23,10 +25,9 @@ export class UsuarioEntity {
     this.salario_mensal = this.#normalizarValor(salario_mensal);
     this.saldo_inicial = this.#normalizarValor(saldo_inicial);
     
-    // Regra: Se saldo_atual não for informado na criação, assume o saldo_inicial
-    this.saldo_atual = saldo_atual !== undefined 
-      ? this.#normalizarValor(saldo_atual) 
-      : this.saldo_inicial;
+    // Prioridade para saldo_atual se existir, senão usa saldoAtual, senão saldo_inicial
+    const saldo = saldo_atual !== undefined ? saldo_atual : (saldoAtual !== undefined ? saldoAtual : this.saldo_inicial);
+    this.saldo_atual = this.#normalizarValor(saldo);
 
     this.data_cadastro = data_cadastro;
   }
@@ -89,6 +90,33 @@ export class UsuarioEntity {
       salario_mensal: this.salario_mensal,
       saldo_inicial: this.saldo_inicial,
       saldo_atual: this.saldo_atual,
+    };
+  }
+
+  toPersistence() {
+    return {
+      idUsuario: this.id_usuario,
+      nome: this.nome,
+      email: this.email,
+      senhaHash: this.senha_hash,
+      perfilFinanceiro: this.perfil_financeiro,
+      salarioMensal: this.salario_mensal,
+      saldoInicial: this.saldo_inicial,
+      saldoAtual: this.saldo_atual,
+    };
+  }
+
+  // Para o Frontend (Snake_Case) - "saldo_atual"
+  toPublicDTO() {
+    return {
+      id_usuario: this.id_usuario,
+      nome: this.nome,
+      email: this.email,
+      perfil_financeiro: this.perfil_financeiro,
+      salario_mensal: this.salario_mensal,
+      saldo_atual: this.saldo_atual, // <--- O FRONT RECEBE ASSIM
+      saldo_inicial: this.saldo_inicial,
+      data_cadastro: this.data_cadastro
     };
   }
 }
