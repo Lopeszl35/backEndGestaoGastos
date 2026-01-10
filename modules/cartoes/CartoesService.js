@@ -1,6 +1,7 @@
 import { sequelize } from "../../database/sequelize.js";
 import { CartaoCreditoEntity } from "./domain/CartaoCreditoEntity.js";
 import { CartaoLancamentoEntity } from "./domain/CartaoLancamentoEntity.js";
+import { EVENTO_FATURA_PAGA } from "./registrarListenersDeCartoes.js";
 import naoEncontrado from "../../errors/naoEncontrado.js";
 import RequisicaoIncorreta from "../../errors/RequisicaoIncorreta.js";
 import crypto from "crypto";
@@ -37,10 +38,12 @@ export class CartoesService {
     cartoesRepositorio,
     faturasRepositorio,
     lancamentosRepositorio,
+    barramentoEventos,
   }) {
     this.cartoesRepositorio = cartoesRepositorio;
     this.faturasRepositorio = faturasRepositorio;
     this.lancamentosRepositorio = lancamentosRepositorio;
+    this.barramentoEventos = barramentoEventos;
   }
 
   async obterVisaoGeralCartoes({ idUsuario, ano, mes, uuidCartaoSelecionado }) {
@@ -380,5 +383,61 @@ export class CartoesService {
     });
 
     return { ativo: cartaoEditado.ativo };
+  }
+
+  async pagarFatura({ idUsuario, idCartao, valorPagamento, transaction }) {
+    
+    const operacaoPagamento = async (t) => {
+        // 1. Buscar Fatura
+        const fatura = await this.faturasRepositorio.buscarFaturaAtual(idCartao, idUsuario, t);
+        
+        if (!fatura) throw new naoEncontrado("Fatura não encontrada.");
+        if (fatura.status === 'PAGA') throw new RequisicaoIncorreta("Esta fatura já está quitada.");
+  
+        // Validação de valor
+        const valorRestante = Number(fatura.totalLancamentos) - Number(fatura.totalPago);
+        if (valorPagamento > valorRestante) {
+             throw new RequisicaoIncorreta(`Valor excede o restante da fatura. Restam: R$ ${valorRestante}`);
+        }
+  
+        // Disparamos o evento e passamos a transação 't' junto!
+        if (this.barramentoEventos) {
+            await this.barramentoEventos.emitir(EVENTO_FATURA_PAGA, {
+                id_usuario: idUsuario,
+                valor: valorPagamento,
+                connection: t // OBRIGATÓRIO: A transação segue para o listener
+            });
+        }
+        // --------------------
+  
+        // 3. Liberar Limite do Cartão
+        await this.cartoesRepositorio.restaurarLimite({
+            idCartao,
+            valor: valorPagamento,
+            transaction: t
+        });
+  
+        // 4. Atualizar a Fatura
+        const novoTotalPago = Number(fatura.totalPago) + Number(valorPagamento);
+        const novoStatus = novoTotalPago >= Number(fatura.totalLancamentos) ? 'PAGA' : fatura.status;
+  
+        await fatura.update({
+            totalPago: novoTotalPago,
+            status: novoStatus
+        }, { transaction: t });
+  
+        return {
+            mensagem: novoStatus === 'PAGA' ? "Fatura quitada com sucesso!" : "Pagamento parcial realizado.",
+            statusFatura: novoStatus,
+            valorPago: valorPagamento,
+            restante: Number(fatura.totalLancamentos) - novoTotalPago
+        };
+    };
+  
+    if (transaction) {
+        return await operacaoPagamento(transaction);
+    } else {
+        return await sequelize.transaction(operacaoPagamento);
+    }
   }
 }

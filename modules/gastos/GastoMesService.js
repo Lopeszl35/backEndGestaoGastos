@@ -72,7 +72,6 @@ export default class GastoMesService {
 
       // 3. Lógica de Eventos (Efeitos Colaterais)
       if (this.BarramentoEventos) {
-        
         if (gastos.forma_pagamento === "CREDITO") {
           // CENÁRIO CRÉDITO:
           // Apenas lança na fatura do cartão.

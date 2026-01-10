@@ -96,6 +96,30 @@ class UserService {
     }
   }
 
+  async diminuirSaldoAtualAposPagarFaturaCartao({ id_usuario, valor, connection }) {
+    try {
+      // regra de negócio
+      const saldoAtual = await this.UserRepository.getSaldoAtual(id_usuario, connection);
+      if (saldoAtual < Number(valor)) {
+        const erro = new Error("Saldo insuficiente para realizar o gasto.");
+        erro.code = "SALDO_INSUFICIENTE";
+        throw erro;
+      }
+      const saldoAtualizado = await this.UserRepository.diminuirSaldoAtual({
+        id_usuario,
+        valor,
+        connection,
+      });
+      return saldoAtualizado;
+    } catch (error) {
+      console.log(
+        "Erro ao diminuir o saldo do usuário no modelo:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
   async getUser(userId) {
     try {
       const userData = await this.UserRepository.getUser(userId);
