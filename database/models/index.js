@@ -3,6 +3,7 @@ import { CartaoFaturaModel } from "./cartoesCredito/CartaoFaturaModel.js";
 import { CartaoLancamentoModel } from "./cartoesCredito/CartaoLancamentoModel.js";
 import { AlertaModel } from "./alertas/AlertaModel.js";
 import { UsuarioModel } from "./usuario/UsuarioModel.js";
+import { CategoriasModel } from "./categorias/CategoriasModel.js";
 
 export function configurarRelacionamentosModelos() {
   CartaoCreditoModel.hasMany(CartaoFaturaModel, {
@@ -24,6 +25,20 @@ export function configurarRelacionamentosModelos() {
     foreignKey: "id_usuario",
     targetKey: "idUsuario",
   });
+
+  // --- Usuário & Categorias --- //
+  UsuarioModel.hasMany(CategoriasModel, {
+    foreignKey: "id_usuario",
+    sourceKey: "idUsuario",
+    as: "categorias" // Permite user.getCategorias()
+  });
+
+  CategoriasModel.belongsTo(UsuarioModel, {
+    foreignKey: "id_usuario",
+    targetKey: "idUsuario",
+    as: "usuario"
+  });
+
 }
 
 export {
@@ -32,4 +47,5 @@ export {
   CartaoLancamentoModel,
   AlertaModel,
   UsuarioModel,
+  CategoriasModel
 };

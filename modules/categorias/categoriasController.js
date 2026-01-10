@@ -1,4 +1,3 @@
-
 class CategoriasController {
   constructor(CategoriasService, TransactionUtil) {
     this.CategoriasService = CategoriasService;
@@ -9,16 +8,19 @@ class CategoriasController {
     try {
       const { id_usuario } = req.params;
       const categoria = req.body.categoria;
+      
       console.log("Categoria recebida: ", categoria);
+      
       const result = await this.TransactionUtil.executeTransaction(
         async (connection) => {
           return await this.CategoriasService.createCategoria(
             categoria,
-            id_usuario,
+            Number(id_usuario),
             connection
           );
         }
       );
+
       if (result.code === "FALHA_CRIACAO_CATEGORIA") {
         return res.status(400).json({
           message: result.mensagem,
@@ -33,12 +35,11 @@ class CategoriasController {
   }
 
   async updateCategoria(req, res, next) {
-    const { id_categoria } = req.query;
+    const { id_categoria } = req.query; // ou req.params dependendo da sua rota
     const categoria = req.body;
+    
     if (!id_categoria) {
-      return res
-        .status(400)
-        .json({ message: "Id da categoria não informado." });
+      return res.status(400).json({ message: "Id da categoria não informado." });
     }
 
     try {
@@ -58,8 +59,9 @@ class CategoriasController {
   }
 
   async deleteCategoria(req, res, next) {
-    const { id_categoria } = req.query;
+    const { id_categoria } = req.query; // Atenção: Verifique se sua rota é query param ou path param
     const dataAtual = new Date();
+    
     try {
       await this.TransactionUtil.executeTransaction(
         async (connection) => {
@@ -102,7 +104,7 @@ class CategoriasController {
 
   async reativarCategoria(req, res, next) {
     const { id_categoria } = req.params;
-    const { id_usuario } = req.query;
+    const { id_usuario } = req.query; // Verifique se isso vem da query ou body/token
 
     try {
       const result = await this.TransactionUtil.executeTransaction(
@@ -113,8 +115,8 @@ class CategoriasController {
             connection
           );
         }
-      )
-      console.log('result: ', result);
+      );
+      console.log("result: ", result);
       res.status(200).json({
         message: "Categoria reativada com sucesso",
         status: 200,
@@ -123,8 +125,6 @@ class CategoriasController {
       next(error);
     }
   }
-
-  
 }
 
 export default CategoriasController;
