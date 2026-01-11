@@ -10,17 +10,18 @@ export class UsuarioEntity {
     senha_hash,
     senhaHash,
     perfil_financeiro,
+    perfilFinanceiro,
     salario_mensal,
     saldo_inicial,
     saldo_atual,
     saldoAtual,
     data_cadastro,
   }) {
-    this.id_usuario = id_usuario;
+    this.id_usuario = id_usuario || idUsuario;
     this.nome = this.#validarNome(nome);
     this.email = this.#validarEmail(email);
-    this.senha_hash = senha_hash; // O hash é gerado antes ou no setter, mas a entidade guarda o estado
-    this.perfil_financeiro = perfil_financeiro || "moderado";
+    this.senha_hash = senha_hash || senhaHash; // O hash é gerado antes ou no setter, mas a entidade guarda o estado
+    this.perfil_financeiro = perfil_financeiro || perfilFinanceiro || "moderado";
     
     // Normalização de valores numéricos
     this.salario_mensal = this.#normalizarValor(salario_mensal);

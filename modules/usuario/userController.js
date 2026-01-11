@@ -1,4 +1,3 @@
-import UserPublicDTO from "./UserPublicDTO.js";
 import NaoEncontrado from "../../errors/naoEncontrado.js";
 
 class UserController {
