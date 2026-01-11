@@ -53,6 +53,7 @@ export default class GastoMesService {
   }
 
   async addGasto(gastos, id_usuario, connection) {
+    console.log("Gastos recebidos na service:", gastos);
     try {
       // 1. Validação prévia
       if (gastos.forma_pagamento === "CREDITO" && !gastos.uuidCartao) {

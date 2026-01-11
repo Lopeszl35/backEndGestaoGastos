@@ -1,4 +1,4 @@
-import { DataTypes, Model, } from "sequelize";
+import { DataTypes, Model, Sequelize } from "sequelize";
 import { sequelize } from "../../sequelize.js";
 
 export class TotalGastosMesModel extends Model {}
@@ -13,6 +13,7 @@ TotalGastosMesModel.init(
     id_usuario: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      field: "id_usuario", // Mapeamento explícito
       references: {
         model: "usuarios",
         key: "id_usuario",
@@ -26,17 +27,19 @@ TotalGastosMesModel.init(
       type: DataTypes.TINYINT,
       allowNull: false,
     },
-    limite_gasto_mes: {
+    limiteGastoMes: { // CamelCase no JS
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       defaultValue: 0.0,
+      field: "limite_gasto_mes", // SnakeCase no Banco
     },
-    gasto_atual_mes: {
+    gastoAtualMes: { // CamelCase no JS
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       defaultValue: 0.0,
+      field: "gasto_atual_mes", // SnakeCase no Banco
     },
-    created_at: { // Note: migration usa created_at (inglês) aqui
+    created_at: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),

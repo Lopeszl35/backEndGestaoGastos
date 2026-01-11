@@ -14,7 +14,7 @@ export default function registrarListenersDeGastos({
   alertasService,
   userRepository,
   cartoesService,
-  categoriasRepository, // <--- Injeção necessária
+  categoriasRepository,
 }) {
   if (!barramentoEventos) throw new Error("barramentoEventos não informado");
   if (!gastoMesRepository) throw new Error("gastoMesRepository não informado");
@@ -57,9 +57,6 @@ export default function registrarListenersDeGastos({
     EVENTO_GASTO_INSERIDO,
     async (payload) => {
       const { id_usuario, gasto, connection } = payload;
-      // Nota: No novo UserRepository, o método é diminuirSaldoAtualAposPagarFaturaCartao no Service
-      // ou diminuirSaldoAtual no Repository antigo. Se refatorou user, use o método correto.
-      // Assumindo que manteve compatibilidade:
       if (userRepository.diminuirSaldoAtual) {
           await userRepository.diminuirSaldoAtual({
             id_usuario,
