@@ -110,10 +110,11 @@ export default class GastoMesRepository {
 
   // 5. Relatório de Gastos por Categoria
   async getGastosTotaisPorCategoria({ idUsuario, inicio, fim }) {
+    console.log("idUsuario no repository: ", idUsuario);
     try {
-      const whereClause = { idUsuario: idUsuario };
+      const whereClause = { id_usuario: idUsuario };
       if (inicio && fim) {
-        whereClause.dataGasto = { [Op.between]: [inicio, fim] };
+        whereClause.data_gasto = { [Op.between]: [inicio, fim] };
       }
 
       const gastos = await GastosModel.findAll({
@@ -132,8 +133,8 @@ export default class GastoMesRepository {
         where: whereClause,
         order: [
           [{ model: CategoriasModel, as: 'categoria' }, 'nome', 'ASC'],
-          ['dataGasto', 'ASC'], // Sequelize usa o nome do atributo do model no order
-          ['idGasto', 'ASC']
+          ['data_gasto', 'ASC'], // Sequelize usa o nome do atributo do model no order
+          ['id_gasto', 'ASC']
         ],
         raw: true,
         nest: true

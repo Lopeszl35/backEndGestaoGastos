@@ -1,4 +1,4 @@
-import { DataTypes, Model } from "sequelize";
+import { DataTypes, Model, Sequelize } from "sequelize";
 import { sequelize } from "../../sequelize.js";
 
 export class GastosFixosModel extends Model {}
@@ -51,14 +51,16 @@ GastosFixosModel.init(
             defaultValue: 1,
             field: "ativo",
         },
-        createdAt: {
+        created_at: {
             type: DataTypes.DATE,
             allowNull: false,
+            defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),   
             field: "created_at",
         },
-        updatedAt: {
+        updated_at: {
             type: DataTypes.DATE,
             allowNull: false,
+            defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             field: "updated_at",
         },
 

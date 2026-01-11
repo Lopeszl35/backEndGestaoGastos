@@ -45,10 +45,12 @@ export default class GastoMesController {
 
   async getGastosTotaisPorCategoria(req, res, next) {
     try {
-      const { id_usuario, inicio, fim } = req.query;
+      const { inicio, fim } = req.query;
+      const idUsuario = req.query.id_usuario;
+      console.log("idUsuario no controler: ", idUsuario);
       
       const result = await this.GastoMesService.getGastosTotaisPorCategoria(
-        Number(id_usuario),
+        Number(idUsuario),
         inicio || null,
         fim || null
       );

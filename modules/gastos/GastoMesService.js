@@ -42,7 +42,8 @@ export default class GastoMesService {
     }
   }
 
-  async getGastosTotaisPorCategoria({ idUsuario, inicio, fim }) {
+  async getGastosTotaisPorCategoria( idUsuario, inicio, fim ) {
+    console.log("idUsuario no service: ", idUsuario);
     try {
       return this.GastoMesRepository.getGastosTotaisPorCategoria({
         idUsuario,
