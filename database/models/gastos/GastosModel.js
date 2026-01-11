@@ -26,6 +26,14 @@ GastosModel.init(
                 key: "id_categoria",
             },
         },
+        id_gasto_fixo: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: "gastos_fixos",
+                key: "id_gasto_fixo",
+            },
+        },
         descricao: {
             type: DataTypes.STRING(255),
             allowNull: false,
