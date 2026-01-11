@@ -390,6 +390,7 @@ export class CartoesService {
     const operacaoPagamento = async (t) => {
         // 1. Buscar Fatura
         const fatura = await this.faturasRepositorio.buscarFaturaAtual(idCartao, idUsuario, ano, mes, t);
+        console.log("fatura encontrada", fatura);
         
         if (!fatura) throw new naoEncontrado("Fatura não encontrada.");
         if (fatura.status === 'PAGA') throw new RequisicaoIncorreta("Esta fatura já está quitada.");
