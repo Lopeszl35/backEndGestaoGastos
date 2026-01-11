@@ -21,6 +21,11 @@ export function configurarRelacionamentosModelos() {
     sourceKey: "idUsuario",
   });
 
+  AlertaModel.belongsTo(UsuarioModel, {
+    foreignKey: "id_usuario",
+    targetKey: "idUsuario",
+  });
+
   CartaoCreditoModel.belongsTo(UsuarioModel, {
     foreignKey: "id_usuario",
     targetKey: "idUsuario",

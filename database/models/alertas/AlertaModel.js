@@ -52,5 +52,3 @@ AlertaModel.init(
   }
 );
 
-// Associação (opcional, mas recomendada para Clean Architecture)
-// AlertaModel.belongsTo(User, { foreignKey: 'id_usuario', as: 'usuario' });

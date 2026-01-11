@@ -4,7 +4,6 @@ import { validationResult } from "express-validator";
 
 // helper para encerrar com erros padronizados
 function handleValidation(req, _res, next) {
-  console.log("body do controller: ", req.body);
   const errors = validationResult(req);
   if (!errors.isEmpty()) return next(new ErroValidacao(errors.array()));
   return next();
