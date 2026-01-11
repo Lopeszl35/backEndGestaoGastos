@@ -5,8 +5,8 @@ import { AlertaModel } from "./alertas/AlertaModel.js";
 import { UsuarioModel } from "./usuario/UsuarioModel.js";
 import { CategoriasModel } from "./categorias/CategoriasModel.js";
 import { GastosModel } from "./gastos/GastosModel.js";
-// 1. ADICIONADO IMPORT QUE FALTAVA
 import { TotalGastosMesModel } from "./gastos/TotalGastosMesModel.js"; 
+import { GastosFixosModel } from "./gastosFixos/GastosFixosModel.js";
 
 export function configurarRelacionamentosModelos() {
   // --- Cartões ---
@@ -54,6 +54,21 @@ export function configurarRelacionamentosModelos() {
   UsuarioModel.hasMany(GastosModel, { foreignKey: "id_usuario", as: "gastos" });
   GastosModel.belongsTo(UsuarioModel, { foreignKey: "id_usuario", as: "usuario" });
 
+  // --- Usuário & Gastos Fixos ---
+  UsuarioModel.hasMany(GastosFixosModel, { foreignKey: "id_usuario", as: "gastosFixos" });
+  GastosFixosModel.belongsTo(UsuarioModel, { foreignKey: "id_usuario", as: "usuario" });
+
+  // 1. ADICIONADO: Relacionamento GastoFixo <-> Gasto
+  GastosFixosModel.hasMany(GastosModel, {
+    foreignKey: "id_gasto_fixo",
+    sourceKey: "idGastoFixo"
+  })
+
+  GastosModel.belongsTo(GastosFixosModel, {
+    foreignKey: "id_gasto_fixo",
+    targetKey: "idGastoFixo"
+  })
+
   // 2. ADICIONADO: Relacionamento Gasto <-> Categoria (Essencial para o include no Repository)
   CategoriasModel.hasMany(GastosModel, { 
     foreignKey: "id_categoria", 
@@ -96,5 +111,6 @@ export {
   UsuarioModel,
   CategoriasModel,
   GastosModel,
-  TotalGastosMesModel 
+  TotalGastosMesModel,
+  GastosFixosModel
 };
