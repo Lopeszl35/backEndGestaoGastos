@@ -7,6 +7,8 @@ import { CategoriasModel } from "./categorias/CategoriasModel.js";
 import { GastosModel } from "./gastos/GastosModel.js";
 import { TotalGastosMesModel } from "./gastos/TotalGastosMesModel.js"; 
 import { GastosFixosModel } from "./gastosFixos/GastosFixosModel.js";
+import { FinanciamentoModel } from "./financiamentos/FinanciamentoModel.js";
+import { FinanciamentoParcelaModel } from "./financiamentos/FinanciamentoParcelaModel.js";
 
 export function configurarRelacionamentosModelos() {
   // --- Cartões ---
@@ -58,7 +60,7 @@ export function configurarRelacionamentosModelos() {
   UsuarioModel.hasMany(GastosFixosModel, { foreignKey: "id_usuario", as: "gastosFixos" });
   GastosFixosModel.belongsTo(UsuarioModel, { foreignKey: "id_usuario", as: "usuario" });
 
-  // 1. ADICIONADO: Relacionamento GastoFixo <-> Gasto
+  // 1. GastoFixo <-> Gasto
   GastosFixosModel.hasMany(GastosModel, {
     foreignKey: "id_gasto_fixo",
     sourceKey: "idGastoFixo"
@@ -69,7 +71,7 @@ export function configurarRelacionamentosModelos() {
     targetKey: "idGastoFixo"
   })
 
-  // 2. ADICIONADO: Relacionamento Gasto <-> Categoria (Essencial para o include no Repository)
+  // 2. Gasto <-> Categoria 
   CategoriasModel.hasMany(GastosModel, { 
     foreignKey: "id_categoria", 
     as: "gastos" 
@@ -101,6 +103,33 @@ export function configurarRelacionamentosModelos() {
     targetKey: "idUsuario",
     as: "usuario" 
   });
+
+  // Usuário <-> Financiamentos
+  UsuarioModel.hasMany(FinanciamentoModel, { foreignKey: "id_usuario", as: "financiamentos" });
+  FinanciamentoModel.belongsTo(UsuarioModel, { foreignKey: "id_usuario", as: "usuario" });
+
+  // Financiamento <-> Parcelas (Cascade: se apagar financiamento, apaga parcelas)
+  FinanciamentoModel.hasMany(FinanciamentoParcelaModel, { 
+    foreignKey: "id_financiamento", 
+    as: "parcelas",
+    onDelete: "CASCADE"
+  });
+  FinanciamentoParcelaModel.belongsTo(FinanciamentoModel, { 
+    foreignKey: "id_financiamento", 
+    as: "financiamento" 
+  });
+
+  // Financiamento <-> Gastos (Histórico de pagamentos)
+  // Um financiamento gera vários gastos (pagamentos de parcelas)
+  FinanciamentoModel.hasMany(GastosModel, { 
+    foreignKey: "id_financiamento", 
+    as: "gastosGerados" 
+  });
+  GastosModel.belongsTo(FinanciamentoModel, { 
+    foreignKey: "id_financiamento", 
+    as: "financiamentoOrigem" 
+  });
+
 }
 
 export {
@@ -112,5 +141,7 @@ export {
   CategoriasModel,
   GastosModel,
   TotalGastosMesModel,
-  GastosFixosModel
+  GastosFixosModel,
+  FinanciamentoModel,
+  FinanciamentoParcelaModel
 };
