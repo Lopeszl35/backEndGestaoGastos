@@ -163,6 +163,17 @@ const loadDependencies = async () => {
     );
     console.log("GastoMesRepository registrado com sucesso.");
 
+    // --- MÓDULO FINANCIAMENTOS (REPO) ---
+    const { default: FinanciamentosRepository } = await import(
+      "./modules/financiamento/FinanciamentosRepository.js"
+    );
+    // Nota: FinanciamentosRepository usa Sequelize models direto, não precisa de 'database' no construtor
+    DependencyInjector.register(
+      "FinanciamentosRepository",
+      new FinanciamentosRepository()
+    );
+    console.log("FinanciamentosRepository registrado com sucesso.");
+
     // Alertas / Notificações (NOVO)
     const { default: AlertasRepository } = await import(
       "./modules/alertas/AlertasRepository.js"
@@ -220,6 +231,19 @@ const loadDependencies = async () => {
     );
     console.log("GastosFixosService registrado com sucesso.");
 
+    // --- MÓDULO FINANCIAMENTOS (SERVICE) ---
+    const { default: FinanciamentosService } = await import(
+      "./modules/financiamento/FinanciamentosService.js"
+    );
+    DependencyInjector.register(
+      "FinanciamentosService",
+      new FinanciamentosService(
+        DependencyInjector.get("FinanciamentosRepository"),
+        DependencyInjector.get("BarramentoEventos")
+      )
+    );
+    console.log("FinanciamentosService registrado com sucesso.");
+
     // Registro de controllers
     const { default: UserController } = await import(
       "./modules/usuario/userController.js"
@@ -261,6 +285,19 @@ const loadDependencies = async () => {
     );
     console.log("GastosFixosController registrado com sucesso.");
 
+    // --- MÓDULO FINANCIAMENTOS (CONTROLLER) ---
+    const { default: FinanciamentosController } = await import(
+      "./modules/financiamento/FinanciamentosController.js"
+    );
+    DependencyInjector.register(
+      "FinanciamentosController",
+      new FinanciamentosController(
+        DependencyInjector.get("FinanciamentosService"),
+        DependencyInjector.get("TransactionUtil")
+      )
+    );
+    console.log("FinanciamentosController registrado com sucesso.");
+
     // AlertasService (NOVO)
     const { default: AlertasService } = await import(
       "./modules/alertas/AlertasService.js"
@@ -294,6 +331,18 @@ const loadDependencies = async () => {
       barramentoEventos: DependencyInjector.get("BarramentoEventos"),
       userService: DependencyInjector.get("UserService"),
     });
+
+    // --- MÓDULO FINANCIAMENTOS (LISTENERS) ---
+    const { default: registrarListenersDeFinanciamentos } = await import(
+      "./modules/financiamento/registrarListenersDeFinanciamentos.js"
+    );
+    registrarListenersDeFinanciamentos({
+      barramentoEventos: DependencyInjector.get("BarramentoEventos"),
+      gastoMesService: DependencyInjector.get("GastoMesService"), // Injeção do Service
+      userRepository: DependencyInjector.get("UserRepository"),
+    });
+    console.log("Listeners de Financiamentos registrados.");
+    // -----------------------------------------
 
     console.log("Todas as dependências foram registradas!");
   } catch (error) {
