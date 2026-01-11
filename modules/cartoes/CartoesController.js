@@ -133,4 +133,14 @@ export class CartoesController {
     }
   }
 
+  async obterTodosCartoes(req, res, next) {
+    try {
+      const idUsuario = Number(req.params.id_usuario);
+      const resultado = await this.cartoesService.obterTodosCartoes(idUsuario);
+      return res.status(200).json(resultado);
+    } catch (error) {
+      next(error);
+    }
+  }
+
 }
