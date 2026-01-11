@@ -85,7 +85,7 @@ class CategoriasController {
     const { id_usuario } = req.params;
 
     try {
-      const result = await this.CategoriasService.getCategoriasAtivas(id_usuario);
+      const result = await this.CategoriasService.getCategoriasAtivas(Number(id_usuario));
       res.status(200).json(result);
     } catch (error) {
       next(error);

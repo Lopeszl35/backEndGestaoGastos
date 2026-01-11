@@ -84,8 +84,10 @@ class UserService {
   }
 
   async loginUser(email, senha) {
+    console.log("email: ", email);
     try {
       const userModel = await this.UserRepository.getUserByEmail(email);
+      console.log("userModel: ", userModel);
       if (!userModel) {
         throw new NaoEncontrado("Usuário nao encontrado");
       } else {
