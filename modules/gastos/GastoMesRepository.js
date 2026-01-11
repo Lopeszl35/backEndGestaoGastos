@@ -197,37 +197,48 @@ export default class GastoMesRepository {
   }
 
   // 8. Incrementar Gasto Atual Mês (Helper para os Listeners)
-  async incrementarGastoAtualMes({ id_usuario, data_gasto, valor, connection }) {
-    // Extrai ano/mes da data (YYYY-MM-DD ou Date obj)
+ async incrementarGastoAtualMes({ id_usuario, data_gasto, valor, connection }) {
     const dateObj = new Date(data_gasto);
     const ano = dateObj.getFullYear();
-    const mes = dateObj.getMonth() + 1; // JS month é 0-11
+    const mes = dateObj.getMonth() + 1;
 
     try {
-      // Find or Create garante que o registro exista
-      const [registro, created] = await TotalGastosMesModel.findOrCreate({
-        where: { 
-            id_usuario: id_usuario, // Usando o nome da coluna do model (que mapeamos field='id_usuario')
-            ano, 
-            mes 
-        },
-        defaults: {
-          limiteGastoMes: 0.00, // Agora bate com o model atualizado
-          gastoAtualMes: 0.00
+      // Tenta atualizar primeiro (mais comum)
+      const [affectedRows] = await TotalGastosMesModel.increment(
+        { gastoAtualMes: Number(valor) },
+        { 
+          where: { id_usuario, ano, mes },
+          transaction: connection
+        }
+      );
+
+      // Se não atualizou nada, é porque não existe. Cria o registro.
+      // O 'increment' do Sequelize retorna [[instancia, rows], affectedCount] dependendo do dialeto,
+      // mas para update puro, verificar se o registro existe antes é mais seguro se o increment falhar.
+      
+      // Abordagem mais robusta: SQL Raw para Upsert (Insert ou Update)
+      // Isso resolve garantido o problema de concorrência e transação
+      const sql = `
+        INSERT INTO total_gastos_mes (id_usuario, ano, mes, limite_gasto_mes, gasto_atual_mes, created_at, updated_at)
+        VALUES (:id_usuario, :ano, :mes, 0.00, :valor, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+          gasto_atual_mes = gasto_atual_mes + :valor,
+          updated_at = CURRENT_TIMESTAMP;
+      `;
+
+      await sequelize.query(sql, {
+        replacements: {
+          id_usuario,
+          ano,
+          mes,
+          valor: Number(valor)
         },
         transaction: connection
-      });
-
-      // Incrementa atomicamente usando a propriedade do model
-      await registro.increment('gastoAtualMes', { 
-          by: Number(valor), 
-          transaction: connection 
       });
 
       return { mensagem: "Gasto do mês incrementado com sucesso." };
     } catch (error) {
       console.error("Erro incrementarGastoAtualMes:", error.message);
-      // Se der erro no increment, tenta update manual como fallback
       // ErroSqlHandler.tratarErroSql(error);
       throw error;
     }

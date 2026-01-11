@@ -440,4 +440,18 @@ export class CartoesService {
         return await sequelize.transaction(operacaoPagamento);
     }
   }
+
+  async obterTodosCartoes(idUsuario) {
+    try {
+      const cartoes = await this.cartoesRepositorio.obterTodosCartoes(idUsuario);
+      if (!cartoes) return {
+        cartoes: [],
+        message: "Cartões não encontrados."
+      };
+      return cartoes;
+    } catch (error) {
+      throw error;
+    }
+  }
+
 }

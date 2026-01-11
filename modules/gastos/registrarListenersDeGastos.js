@@ -67,7 +67,7 @@ export default function registrarListenersDeGastos({
     }
   );
 
-  // 4) Associar valor da compra ao cartão de crédito
+ // 4) Associar valor da compra ao cartão de crédito
   barramentoEventos.registrarListener(
     EVENTO_FORMA_PAGAMENTO_CREDITO,
     async (payload) => {
@@ -83,7 +83,8 @@ export default function registrarListenersDeGastos({
       let nomeCategoria = "Outros";
       try {
         if (gasto.id_categoria && categoriasRepository) {
-          const catDb = await categoriasRepository.buscarCategoriaPorId(gasto.id_categoria, id_usuario);
+          const catDb = await categoriasRepository.buscarPorId(gasto.id_categoria, id_usuario);
+          console.log("catDb: ", catDb);
           if (catDb && catDb.nome) {
             nomeCategoria = catDb.nome;
           }
@@ -92,22 +93,33 @@ export default function registrarListenersDeGastos({
         console.warn(`Erro ao buscar categoria do gasto: ${error.message}`);
       }
 
-      // Formatação de data se necessário (Sequelize já devolve Date ou string YYYY-MM-DD)
-      const dataFormatada = String(gasto.data_gasto).substring(0, 10);
+      // --- CORREÇÃO DE DATA AQUI ---
+      // Converte qualquer formato de entrada para um objeto Date e depois para string YYYY-MM-DD
+      let dataFormatada;
+      try {
+          // Garante que a data seja interpretada corretamente
+          const dataObj = new Date(gasto.data_gasto);
+          if (isNaN(dataObj.getTime())) {
+              throw new Error("Data inválida");
+          }
+          // Pega YYYY-MM-DD (ISO 8601 part)
+          dataFormatada = dataObj.toISOString().split('T')[0];
+      } catch (e) {
+          // Fallback: se der erro na conversão, tenta usar o que veio (mas o Entity vai validar)
+          dataFormatada = String(gasto.data_gasto);
+      }
 
       const dadosLancamento = {
         descricao: gasto.descricao,
         categoria: nomeCategoria,
         valorTotal: Number(gasto.valor),
-        dataCompra: dataFormatada,
+        dataCompra: dataFormatada, // Agora envia "YYYY-MM-DD" com hífens
         parcelado: false,
         numeroParcelas: 1,
       };
 
-      // Tenta usar uuidCartao (se veio do front) ou busca uuid pelo id_cartao se já salvou no banco
       let uuidParaCartao = gasto.uuidCartao;
       
-      // Retry Logic
       const TENTATIVAS_MAXIMAS = 3;
       let tentativa = 1;
       let sucesso = false;
@@ -116,24 +128,24 @@ export default function registrarListenersDeGastos({
         try {
           await cartoesService.criarLancamentoCartao({
             idUsuario: id_usuario,
-            uuidCartao: uuidParaCartao, // O Service de Cartões espera UUID
+            uuidCartao: uuidParaCartao,
             dadosLancamento,
           });
           sucesso = true;
           console.log(`Lançamento cartão processado na tentativa ${tentativa}.`);
         } catch (error) {
           console.warn(`Tentativa ${tentativa} falhou: ${error.message}`);
+          
           if (tentativa < TENTATIVAS_MAXIMAS) {
             await esperar(1000 * Math.pow(2, tentativa - 1));
             tentativa++;
           } else {
             console.error("Falha final ao processar cartão.");
-            // Criar alerta de erro
-            if (alertasService.criarAlertaSistema) {
+            if (alertasService?.criarAlertaSistema) {
                 await alertasService.criarAlertaSistema({
                     id_usuario,
                     tipo_alerta: "ERRO_PROCESSAMENTO",
-                    mensagem: `Falha ao lançar despesa '${gasto.descricao}' no cartão.`,
+                    mensagem: `Falha ao lançar despesa '${gasto.descricao}' no cartão: ${error.message}`,
                     severidade: "ALTA"
                 });
             }
