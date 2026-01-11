@@ -84,21 +84,29 @@ class UserService {
   }
 
   async loginUser(email, senha) {
-    console.log("email: ", email);
     try {
+      // userModel vem do Sequelize (camelCase: idUsuario, senhaHash...)
       const userModel = await this.UserRepository.getUserByEmail(email);
-      console.log("userModel: ", userModel);
+      
       if (!userModel) {
-        throw new NaoEncontrado("Usuário nao encontrado");
-      } else {
-        await Auth.senhaValida(senha, userModel.senhaHash);
-        
-        // Converter para Entity para gerar DTO correto
-        const entity = new UsuarioEntity(userModel);
-        const token = generateToken(entity.toPublicDTO());
-        
-        return new AuthResponseDTO(userModel, token);
-      }
+        throw new NaoEncontrado("Usuário não encontrado");
+      } 
+      
+      await Auth.senhaValida(senha, userModel.senhaHash);
+      
+      // --- CORREÇÃO PRINCIPAL AQUI ---
+      // 1. Converte Model -> Entity (para aplicar regras/formatação)
+      const entity = new UsuarioEntity(userModel);
+      
+      // 2. Gera o objeto público (snake_case: id_usuario, saldo_atual...)
+      const userPublicData = entity.toPublicDTO(); 
+
+      // 3. Gera o token com os dados corretos
+      const token = generateToken(userPublicData);
+      
+      // 4. Retorna DTO com os dados em snake_case
+      return new AuthResponseDTO(userPublicData, token);
+
     } catch (error) {
       console.log("Erro ao logar o usuário no service:", error.message);
       throw error;
