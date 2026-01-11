@@ -4,8 +4,12 @@ import { CartaoLancamentoModel } from "./cartoesCredito/CartaoLancamentoModel.js
 import { AlertaModel } from "./alertas/AlertaModel.js";
 import { UsuarioModel } from "./usuario/UsuarioModel.js";
 import { CategoriasModel } from "./categorias/CategoriasModel.js";
+import { GastosModel } from "./gastos/GastosModel.js";
+// 1. ADICIONADO IMPORT QUE FALTAVA
+import { TotalGastosMesModel } from "./gastos/TotalGastosMesModel.js"; 
 
 export function configurarRelacionamentosModelos() {
+  // --- Cartões ---
   CartaoCreditoModel.hasMany(CartaoFaturaModel, {
     foreignKey: "id_cartao",
     sourceKey: "idCartao",
@@ -16,14 +20,10 @@ export function configurarRelacionamentosModelos() {
     sourceKey: "idCartao",
   });
 
+  // --- Usuário & Cartões ---
   UsuarioModel.hasMany(CartaoCreditoModel, {
     foreignKey: "id_usuario",
     sourceKey: "idUsuario",
-  });
-
-  AlertaModel.belongsTo(UsuarioModel, {
-    foreignKey: "id_usuario",
-    targetKey: "idUsuario",
   });
 
   CartaoCreditoModel.belongsTo(UsuarioModel, {
@@ -31,11 +31,17 @@ export function configurarRelacionamentosModelos() {
     targetKey: "idUsuario",
   });
 
-  // --- Usuário & Categorias --- //
+  // --- Alertas ---
+  AlertaModel.belongsTo(UsuarioModel, {
+    foreignKey: "id_usuario",
+    targetKey: "idUsuario",
+  });
+
+  // --- Usuário & Categorias ---
   UsuarioModel.hasMany(CategoriasModel, {
     foreignKey: "id_usuario",
     sourceKey: "idUsuario",
-    as: "categorias" // Permite user.getCategorias()
+    as: "categorias" 
   });
 
   CategoriasModel.belongsTo(UsuarioModel, {
@@ -44,6 +50,42 @@ export function configurarRelacionamentosModelos() {
     as: "usuario"
   });
 
+  // --- Usuário & Gastos ---
+  UsuarioModel.hasMany(GastosModel, { foreignKey: "id_usuario", as: "gastos" });
+  GastosModel.belongsTo(UsuarioModel, { foreignKey: "id_usuario", as: "usuario" });
+
+  // 2. ADICIONADO: Relacionamento Gasto <-> Categoria (Essencial para o include no Repository)
+  CategoriasModel.hasMany(GastosModel, { 
+    foreignKey: "id_categoria", 
+    as: "gastos" 
+  });
+  GastosModel.belongsTo(CategoriasModel, { 
+    foreignKey: "id_categoria", 
+    as: "categoria" 
+  });
+
+  // 3. Relacionamento Gasto <-> Cartão 
+  CartaoCreditoModel.hasMany(GastosModel, { 
+    foreignKey: "id_cartao", 
+    as: "gastos" 
+  });
+  GastosModel.belongsTo(CartaoCreditoModel, { 
+    foreignKey: "id_cartao", 
+    as: "cartao" 
+  });
+
+  // --- Total Gastos Mês ---
+  UsuarioModel.hasMany(TotalGastosMesModel, { 
+    foreignKey: "id_usuario", 
+    sourceKey: "idUsuario",
+    as: "totaisGastosMes"
+  });
+
+  TotalGastosMesModel.belongsTo(UsuarioModel, { 
+    foreignKey: "id_usuario", 
+    targetKey: "idUsuario",
+    as: "usuario" 
+  });
 }
 
 export {
@@ -52,5 +94,7 @@ export {
   CartaoLancamentoModel,
   AlertaModel,
   UsuarioModel,
-  CategoriasModel
+  CategoriasModel,
+  GastosModel,
+  TotalGastosMesModel 
 };

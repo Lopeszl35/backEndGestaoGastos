@@ -1,268 +1,226 @@
+import { GastosModel, TotalGastosMesModel, CategoriasModel, UsuarioModel } from "../../database/models/index.js";
+import { sequelize } from "../../database/sequelize.js";
+import { Op, QueryTypes } from "sequelize";
 import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
 
-class GastoMesRepository {
-  constructor(database) {
-    this.database = database;
-  }
+export default class GastoMesRepository {
+  constructor() {}
 
+  // 1. Configurar Limite (Upsert)
   async configGastoLimiteMes(id_usuario, dadosMes, connection) {
-    console.log("GastoMesRepository.configGastoLimiteMes chamado com:", {
-      id_usuario,
-      dadosMes,
-    });
+    console.log("GastoMesRepository.configGastoLimiteMes chamado com:", { id_usuario, dadosMes });
     try {
       const { ano, mes, limiteGastoMes } = dadosMes;
 
-      const sql = `
-        INSERT INTO total_gastos_mes (id_usuario, ano, mes, limite_gasto_mes, gasto_atual_mes)
-        VALUES (?, ?, ?, ?, 0.00)
-        ON DUPLICATE KEY UPDATE
-          limite_gasto_mes = VALUES(limite_gasto_mes),
-          updated_at = CURRENT_TIMESTAMP;
-      `;
-
-      const params = [
-        Number(id_usuario),
-        Number(ano),
-        Number(mes),
-        Number(limiteGastoMes),
-      ];
-
-      const result = await connection.query(sql, params);
+      // Usando UPSERT do Sequelize (compatível com MySQL 'ON DUPLICATE KEY UPDATE')
+      await TotalGastosMesModel.upsert({
+        idUsuario: id_usuario,
+        ano: Number(ano),
+        mes: Number(mes),
+        limiteGastoMes: Number(limiteGastoMes),
+        // Se for insert, gastoAtualMes começa com 0 (default do model), ou podemos forçar
+        // Se for update, ele mantém o valor atual a menos que especifiquemos. 
+        // O Sequelize upsert atualiza os campos passados.
+      }, { transaction: connection });
 
       return {
         mensagem: "Configuração mensal salva com sucesso.",
         id_usuario: Number(id_usuario),
         ano: Number(ano),
         mes: Number(mes),
-        limite_gasto_mes: Number(limiteGastoMes),
-        result,
+        limite_gasto_mes: Number(limiteGastoMes)
       };
     } catch (error) {
+      ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
 
+  // 2. Obter Limite
   async getLimiteGastosMes(id_usuario, ano, mes) {
     try {
-      const sql = `
-        SELECT
-          *
-        FROM total_gastos_mes
-        WHERE id_usuario = ?
-        AND ano = ?
-        AND mes = ?
-        LIMIT 1
-      `;
-
-      const params = [Number(id_usuario), Number(ano), Number(mes)];
-      const rows = await this.database.executaComando(sql, params);
-      console.log("getLimiteGastosMesRows: ", rows);
-      return rows;
+      const resultado = await TotalGastosMesModel.findOne({
+        where: { idUsuario: id_usuario, ano, mes },
+        raw: true
+      });
+      console.log("getLimiteGastosMesRows: ", resultado);
+      // Retorna array para manter compatibilidade com código antigo que espera rows[0]
+      return resultado ? [resultado] : [];
     } catch (error) {
+      console.error("Erro no GastoMesRepository.getLimiteGastosMes:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
 
+  // 3. Atualizar Limite (Função que faltava)
   async atualizarLimite(id_usuario, limite_gasto_mes, connection) {
-    const conn = connection ?? this.database;
-
     try {
-      const sql = `
-        UPDATE total_gastos_mes
-        SET limite_gasto_mes = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id_usuario = ?
-      `;
-
-      const result = await conn.executaComando(sql, [
-        Number(limite_gasto_mes),
-        Number(id_usuario),
-      ]);
-
-      return { mensagem: "Limite atualizado com sucesso.", result };
+      const [affectedRows] = await TotalGastosMesModel.update(
+        { limiteGastoMes: limite_gasto_mes },
+        { 
+          where: { idUsuario: id_usuario },
+          transaction: connection
+        }
+      );
+      return { mensagem: "Limite atualizado com sucesso.", result: { affectedRows } };
     } catch (error) {
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
 
-  /**
-   * (Opcional) Recalcular gasto_atual_mes a partir da tabela gastos
-   * - Útil se você quiser "consertar" caso alguém mexa manualmente no banco
-   * - Ou se você inserir gastos antigos e quiser garantir consistência
-   */
+  // 4. Recalcular Gasto Atual do Mês (Completo)
   async recalcularGastoAtualMes(id_usuario, ano, mes, connection) {
-    const conn = connection ?? this.database;
-
     try {
-      const sql = `
-        UPDATE total_gastos_mes t
-        JOIN (
-          SELECT
-            id_usuario,
-            COALESCE(SUM(valor), 0) AS soma
-          FROM gastos
-          WHERE id_usuario = ?
-            AND YEAR(data_gasto) = ?
-            AND MONTH(data_gasto) = ?
-        ) g ON g.id_usuario = t.id_usuario
-        SET t.gasto_atual_mes = g.soma,
-            t.updated_at = CURRENT_TIMESTAMP
-        WHERE t.id_usuario = ?
-      `;
+      // Passo 1: Calcular soma na tabela de gastos
+      const soma = await GastosModel.sum('valor', {
+        where: {
+          idUsuario: id_usuario,
+          [Op.and]: [
+            sequelize.where(sequelize.fn('YEAR', sequelize.col('data_gasto')), ano),
+            sequelize.where(sequelize.fn('MONTH', sequelize.col('data_gasto')), mes)
+          ]
+        },
+        transaction: connection
+      });
 
-      const result = await conn.executaComando(sql, [
-        Number(id_usuario),
-        Number(ano),
-        Number(mes),
-        Number(id_usuario),
-      ]);
+      const valorTotal = soma || 0;
+
+      // Passo 2: Atualizar tabela de totais
+      await TotalGastosMesModel.update(
+        { gastoAtualMes: valorTotal },
+        {
+          where: { idUsuario: id_usuario, ano, mes },
+          transaction: connection
+        }
+      );
 
       return {
         mensagem: "Gasto atual do mês recalculado.",
-        ano: ano,
-        mes: mes,
-        result,
+        ano,
+        mes,
+        result: { gastoAtualMes: valorTotal }
       };
     } catch (error) {
+      console.error("Erro no GastoMesRepository.recalcularGastoAtualMes:", error.message);
       throw error;
     }
   }
 
+  // 5. Relatório de Gastos por Categoria
   async getGastosTotaisPorCategoria({ idUsuario, inicio, fim }) {
     try {
-      const params = [idUsuario];
-
-      const filtroPeriodo =
-        inicio && fim ? "AND g.data_gasto BETWEEN ? AND ?" : "";
-
+      const whereClause = { idUsuario: idUsuario };
       if (inicio && fim) {
-        params.push(inicio, fim);
+        whereClause.dataGasto = { [Op.between]: [inicio, fim] };
       }
 
-      // Observação: LEFT JOIN pra trazer categoria mesmo se não tiver gasto
-      const sql = `
-      SELECT
-        cg.id_categoria,
-        cg.nome AS nomeCategoria,
-        g.id_gasto,
-        DATE_FORMAT(g.data_gasto, '%Y-%m-%d') AS data_gasto,
-        CAST(g.valor AS DECIMAL(10,2)) AS valor,
-        IFNULL(g.descricao, '') AS descricao
-      FROM gastos g
-      JOIN categorias_gastos cg
-        ON cg.id_categoria = g.id_categoria
-      AND cg.id_usuario   = g.id_usuario
-      WHERE g.id_usuario = 1
-      ${filtroPeriodo}
-      ORDER BY cg.nome, g.data_gasto, g.id_gasto;
-    `;
+      const gastos = await GastosModel.findAll({
+        attributes: [
+          ['id_gasto', 'id_gasto'], // Aliases para manter compatibilidade exata
+          [sequelize.fn('DATE_FORMAT', sequelize.col('data_gasto'), '%Y-%m-%d'), 'data_gasto'],
+          ['valor', 'valor'],
+          ['descricao', 'descricao']
+        ],
+        include: [{
+          model: CategoriasModel,
+          as: 'categoria',
+          attributes: [['id_categoria', 'id_categoria'], ['nome', 'nomeCategoria']],
+          required: true // Inner Join
+        }],
+        where: whereClause,
+        order: [
+          [{ model: CategoriasModel, as: 'categoria' }, 'nome', 'ASC'],
+          ['dataGasto', 'ASC'], // Sequelize usa o nome do atributo do model no order
+          ['idGasto', 'ASC']
+        ],
+        raw: true,
+        nest: true
+      });
 
-      // Mais simples: reordenar params:
-      const orderedParams =
-        inicio && fim ? [inicio, fim, idUsuario] : [idUsuario];
+      // Achata o objeto aninhado para o formato plano esperado
+      return gastos.map(g => ({
+        id_categoria: g.categoria.id_categoria,
+        nomeCategoria: g.categoria.nomeCategoria,
+        id_gasto: g.id_gasto,
+        data_gasto: g.data_gasto,
+        valor: g.valor,
+        descricao: g.descricao || ''
+      }));
 
-      const result = await this.database.executaComando(sql, orderedParams);
-      console.log("Gastos totais por categoria:", result);
-      return result;
     } catch (error) {
+      console.error("Erro getGastosTotaisPorCategoria:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
 
+  // 6. Adicionar Gasto
   async addGasto(gastos, id_usuario, connection) {
-    const sql = `
-            INSERT INTO gastos (id_categoria, id_usuario, valor, data_gasto, descricao, forma_pagamento) 
-            VALUES (?, ?, ?, ?, ?, ?);
-        `;
-    const params = [
-      gastos.id_categoria,
-      id_usuario,
-      gastos.valor,
-      gastos.data_gasto,
-      gastos.descricao || null, // Campo opcional
-      gastos.forma_pagamento || null,
-    ];
-
     try {
-      const [result] = await connection.query(sql, params);
-      if (result.affectedRows === 1) {
-        return {
-          mensagem: "Gasto adicionado com sucesso.",
-        };
-      } else {
-        return {
-          mensagem: "Falha ao adicionar gasto.",
-          code: "FALHA_ADICAO_GASTO",
-        };
-      }
+      const novoGasto = await GastosModel.create({
+        idCategoria: gastos.id_categoria,
+        idUsuario: id_usuario,
+        valor: gastos.valor,
+        dataGasto: gastos.data_gasto,
+        descricao: gastos.descricao || null,
+        formaPagamento: gastos.forma_pagamento || null,
+        origemLancamento: gastos.origem_lancamento || "manual",
+        idCartao: gastos.id_cartao || null
+      }, { transaction: connection });
+
+      return {
+        mensagem: "Gasto adicionado com sucesso.",
+        id_gasto: novoGasto.idGasto // Retorna ID gerado
+      };
     } catch (error) {
-      
+      console.error("Erro addGasto:", error);
       throw error;
     }
   }
 
+  // 7. Obter Saldo Atual (Função que faltava)
   async getSaldoAtual(id_usuario, connection) {
-    const sql = `
-      SELECT saldo_atual
-      FROM usuarios
-      WHERE id_usuario = ?
-      LIMIT 1;
-    `;
-
     try {
-      if (connection) {
-        const [rows] = await connection.query(sql, [Number(id_usuario)]);
-        const saldo = rows?.[0]?.saldo_atual ?? 0;
-        return Number(saldo);
-      }
-
-      const rows = await this.database.executaComando(sql, [
-        Number(id_usuario),
-      ]);
-      const saldo = rows?.[0]?.saldo_atual ?? 0;
-      return Number(saldo);
+      // Usa UsuarioModel para buscar saldo
+      const usuario = await UsuarioModel.findByPk(id_usuario, {
+        attributes: ['saldoAtual'],
+        transaction: connection
+      });
+      return usuario ? Number(usuario.saldoAtual) : 0;
     } catch (error) {
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
 
-  /**
-   * Incrementa gasto_atual_mes em total_gastos_mes baseado na data do gasto.
-   * - Se não existir registro para (id_usuario, ano, mes), cria com limite_gasto_mes = 0.
-   */
-  async incrementarGastoAtualMes({
-    id_usuario,
-    data_gasto,
-    valor,
-    connection,
-  }) {
-    const sql = `
-      INSERT INTO total_gastos_mes (id_usuario, ano, mes, limite_gasto_mes, gasto_atual_mes)
-      VALUES (?, YEAR(?), MONTH(?), 0.00, ?)
-      ON DUPLICATE KEY UPDATE
-        gasto_atual_mes = gasto_atual_mes + VALUES(gasto_atual_mes),
-        updated_at = CURRENT_TIMESTAMP;
-    `;
-
-    const params = [Number(id_usuario), data_gasto, data_gasto, Number(valor)];
+  // 8. Incrementar Gasto Atual Mês (Helper para os Listeners)
+  async incrementarGastoAtualMes({ id_usuario, data_gasto, valor, connection }) {
+    // Extrai ano/mes da data
+    const dateObj = new Date(data_gasto);
+    const ano = dateObj.getFullYear();
+    const mes = dateObj.getMonth() + 1; // JS month é 0-11
 
     try {
-      if (connection) {
-        await connection.query(sql, params);
-        return { mensagem: "Gasto do mês incrementado com sucesso." };
-      }
+      // Find or Create garante que o registro exista
+      const [registro, created] = await TotalGastosMesModel.findOrCreate({
+        where: { idUsuario: id_usuario, ano, mes },
+        defaults: {
+          limiteGastoMes: 0.00,
+          gastoAtualMes: 0.00
+        },
+        transaction: connection
+      });
 
-      await this.database.executaComandoNonQuery(sql, params);
+      // Incrementa atomicamente
+      await registro.increment('gastoAtualMes', { by: valor, transaction: connection });
+
       return { mensagem: "Gasto do mês incrementado com sucesso." };
     } catch (error) {
+      console.error("Erro incrementarGastoAtualMes:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
 }
-
-export default GastoMesRepository;
