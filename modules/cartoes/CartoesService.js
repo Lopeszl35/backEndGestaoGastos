@@ -386,6 +386,7 @@ export class CartoesService {
   }
 
   async pagarFatura({ idUsuario, idCartao, valorPagamento, ano, mes, transaction }) {
+    console.log("dados recebidos: ", { idUsuario, idCartao, valorPagamento, ano, mes });
     
     const operacaoPagamento = async (t) => {
         // 1. Buscar Fatura
