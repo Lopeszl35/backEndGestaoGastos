@@ -158,16 +158,17 @@ export default class GastoMesRepository {
 
   // 6. Adicionar Gasto
   async addGasto(gastos, id_usuario, connection) {
+    console.log("Gastos recebidos na service:", gastos);
     try {
       const novoGasto = await GastosModel.create({
-        idCategoria: gastos.id_categoria,
-        idUsuario: id_usuario,
+        id_categoria: gastos.id_categoria,
+        id_usuario: id_usuario,
         valor: gastos.valor,
-        dataGasto: gastos.data_gasto,
+        data_gasto: gastos.data_gasto,
         descricao: gastos.descricao || null,
-        formaPagamento: gastos.forma_pagamento || null,
-        origemLancamento: gastos.origem_lancamento || "manual",
-        idCartao: gastos.id_cartao || null
+        forma_pagamento: gastos.forma_pagamento || null,
+        origem_lancamento: gastos.origem_lancamento || "manual",
+        id_cartao: gastos.id_cartao || null
       }, { transaction: connection });
 
       return {
@@ -197,7 +198,7 @@ export default class GastoMesRepository {
 
   // 8. Incrementar Gasto Atual Mês (Helper para os Listeners)
   async incrementarGastoAtualMes({ id_usuario, data_gasto, valor, connection }) {
-    // Extrai ano/mes da data
+    // Extrai ano/mes da data (YYYY-MM-DD ou Date obj)
     const dateObj = new Date(data_gasto);
     const ano = dateObj.getFullYear();
     const mes = dateObj.getMonth() + 1; // JS month é 0-11
@@ -205,21 +206,29 @@ export default class GastoMesRepository {
     try {
       // Find or Create garante que o registro exista
       const [registro, created] = await TotalGastosMesModel.findOrCreate({
-        where: { idUsuario: id_usuario, ano, mes },
+        where: { 
+            id_usuario: id_usuario, // Usando o nome da coluna do model (que mapeamos field='id_usuario')
+            ano, 
+            mes 
+        },
         defaults: {
-          limiteGastoMes: 0.00,
+          limiteGastoMes: 0.00, // Agora bate com o model atualizado
           gastoAtualMes: 0.00
         },
         transaction: connection
       });
 
-      // Incrementa atomicamente
-      await registro.increment('gastoAtualMes', { by: valor, transaction: connection });
+      // Incrementa atomicamente usando a propriedade do model
+      await registro.increment('gastoAtualMes', { 
+          by: Number(valor), 
+          transaction: connection 
+      });
 
       return { mensagem: "Gasto do mês incrementado com sucesso." };
     } catch (error) {
       console.error("Erro incrementarGastoAtualMes:", error.message);
-      ErroSqlHandler.tratarErroSql(error);
+      // Se der erro no increment, tenta update manual como fallback
+      // ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }

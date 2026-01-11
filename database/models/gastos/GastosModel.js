@@ -1,4 +1,4 @@
-import { DataTypes, Model } from "sequelize";
+import { DataTypes, Model, Sequelize } from "sequelize";
 import { sequelize } from "../../sequelize.js";
 
 export class GastosModel extends Model {}
@@ -33,6 +33,7 @@ GastosModel.init(
         origem_lancamento: {
             type: DataTypes.STRING(255),
             allowNull: false,
+            defaultValue: "MANUAL"
         },
         metadados_json: {
             type: DataTypes.JSON, // O Sequelize converte auto para string/json
