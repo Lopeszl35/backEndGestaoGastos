@@ -80,7 +80,6 @@ export default async ({ database }) => {
   ));
 
   // 4. Controllers
-  // Apenas importamos e registramos
   const { default: UserController } = await import("../modules/usuario/userController.js");
   const { default: CategoriasController } = await import("../modules/categorias/categoriasController.js");
   const { default: GastoMesController } = await import("../modules/gastos/GastoMesController.js");
@@ -121,6 +120,22 @@ export default async ({ database }) => {
     gastoMesService: DependencyInjector.get("GastoMesService"),
     userRepository: DependencyInjector.get("UserRepository"),
   });
+
+  // === DASHBOARD REPOSITORY ===
+  const { DashboardRepository } = await import("../modules/dashboard/DashboardRepository.js");
+  DependencyInjector.register("DashboardRepository", new DashboardRepository());
+
+  // === DASHBOARD SERVICE  ===
+  const { default: DashboardService } = await import("../modules/dashboard/DashboardService.js");
+  DependencyInjector.register("DashboardService", new DashboardService(
+      DependencyInjector.get("DashboardRepository") 
+  ));
+
+  // === DASHBOARD CONTROLLER  ===
+  const { default: DashboardController } = await import("../modules/dashboard/DashboardController.js");
+  DependencyInjector.register("DashboardController", new DashboardController(
+      DependencyInjector.get("DashboardService")
+  ));
 
   console.log("✅ Container de dependências carregado.");
 };
