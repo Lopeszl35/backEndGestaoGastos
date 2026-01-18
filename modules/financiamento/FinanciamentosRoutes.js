@@ -13,7 +13,7 @@ export default function FinanciamentosRoutes(controller) {
   // 1. Criar novo Financiamento
   // POST /api/financiamentos/criar?id_usuario=1
   router.post(
-    "/criar", 
+    "/criarFinanciamento", 
     validarCriacaoFinanciamento, 
     (req, res, next) => controller.criar(req, res, next)
   );
@@ -21,7 +21,7 @@ export default function FinanciamentosRoutes(controller) {
   // 2. Listar Financiamentos Ativos
   // GET /api/financiamentos?id_usuario=1
   router.get(
-    "/", 
+    "/financiamentosAtivos", 
     validarListagem, 
     (req, res, next) => controller.listarAtivos(req, res, next)
   );

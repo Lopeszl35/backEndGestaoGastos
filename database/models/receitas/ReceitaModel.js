@@ -1,38 +1,66 @@
-import { DataTypes } from 'sequelize';
-import { sequelize } from '../../sequelize.js';
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../../sequelize.js"; 
 
-const ReceitaModel = sequelize.define('Receita', {
-    id_receita: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    id_usuario: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    valor: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false
-    },
-    data_receita: {
-        type: DataTypes.DATEONLY,
-        allowNull: false
-    },
-    descricao: {
-        type: DataTypes.STRING(255),
-        allowNull: true
-    },
-    origem_lancamento: {
-        type: DataTypes.STRING(30),
-        defaultValue: "manual"
-    },
-    // Adicione outros campos se necessário conforme sua migration
-}, {
-    tableName: 'receitas',
-    timestamps: true,
-    createdAt: 'criado_em',
-    updatedAt: 'atualizado_em'
-});
+export class ReceitaModel extends Model {}
 
-export default ReceitaModel;
+ReceitaModel.init(
+    {
+        idReceita: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            field: "id_receita",
+        },
+        idUsuario: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            field: "id_usuario",
+            references: {
+                model: "usuarios",
+                key: "id_usuario",
+            },
+        },
+        valor: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
+        dataReceita: {
+            type: DataTypes.DATEONLY,
+            allowNull: false,
+            field: "data_receita",
+        },
+        descricao: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+        },
+        origemLancamento: {
+            type: DataTypes.STRING(30),
+            defaultValue: "manual",
+            field: "origem_lancamento",
+        },
+        metadadosJson: {
+            type: DataTypes.TEXT("long"),
+            allowNull: true,
+            field: "metadados_json",
+        },
+        criadoEm: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+            field: "criado_em",
+        },
+        atualizadoEm: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+            field: "atualizado_em",
+        },
+    },
+    {
+        sequelize,
+        tableName: "receitas",
+        timestamps: true,
+        createdAt: "criadoEm",
+        updatedAt: "atualizadoEm",
+    }
+);
