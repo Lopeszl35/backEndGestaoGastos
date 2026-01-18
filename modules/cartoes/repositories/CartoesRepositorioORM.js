@@ -81,5 +81,17 @@ export class CartoesRepositorioORM {
     return cartao;
   }
 
+  async obterTodosCartoes(idUsuario) {
+    try {
+      const cartoes = await CartaoCreditoModel.findAll({
+        where: { idUsuario },
+        order: [["created_at", "DESC"]],
+      });
+      return cartoes;
+    } catch (error) {
+      throw error;
+    }
+  }
+
 }
 

@@ -1,8 +1,11 @@
+import { GastosFixosModel } from "../../database/models/index.js";
+import { sequelize } from "../../database/sequelize.js"; // Import direto
+import { Op, QueryTypes } from "sequelize";
 import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
 
 export default class GastosFixosRepository {
-  constructor(database) {
-    this.database = database;
+  constructor() {
+    // Não precisa mais de this.database injetado
   }
 
   async obterResumoGastosFixos(id_usuario) {
@@ -28,7 +31,7 @@ export default class GastosFixosRepository {
             END
           ), 2) AS totalAnual
         FROM gastos_fixos
-        WHERE id_usuario = ?
+        WHERE id_usuario = :id_usuario
           AND ativo = 1;
       `;
 
@@ -56,62 +59,55 @@ export default class GastosFixosRepository {
               )
             END AS proximo_vencimento
           FROM gastos_fixos
-          WHERE id_usuario = ?
+          WHERE id_usuario = :id_usuario
             AND ativo = 1
         ) x
         WHERE x.proximo_vencimento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY);
       `;
 
-      const [rowTotais] = await this.database.executaComando(sqlTotais, [Number(id_usuario)]);
-      const [rowProximos] = await this.database.executaComando(sqlProximos7Dias, [Number(id_usuario)]);
+      // Executa em paralelo
+      const [resultTotais, resultProximos] = await Promise.all([
+        sequelize.query(sqlTotais, {
+          replacements: { id_usuario },
+          type: QueryTypes.SELECT
+        }),
+        sequelize.query(sqlProximos7Dias, {
+          replacements: { id_usuario },
+          type: QueryTypes.SELECT
+        })
+      ]);
 
-      const totalMensal = Number(rowTotais?.totalMensal ?? 0);
-      const totalAnual = Number(rowTotais?.totalAnual ?? 0);
-
-      const totalProximos = Number(rowProximos?.total ?? 0);
-      const quantidadeProximos = Number(rowProximos?.quantidade ?? 0);
+      const rowTotais = resultTotais[0] || {};
+      const rowProximos = resultProximos[0] || {};
 
       return {
-        totalMensal: Number.isFinite(totalMensal) ? totalMensal : 0,
-        totalAnual: Number.isFinite(totalAnual) ? totalAnual : 0,
+        totalMensal: Number(rowTotais.totalMensal ?? 0),
+        totalAnual: Number(rowTotais.totalAnual ?? 0),
         proximos7Dias: {
-          total: Number.isFinite(totalProximos) ? totalProximos : 0,
-          quantidade: Number.isFinite(quantidadeProximos) ? quantidadeProximos : 0,
+          total: Number(rowProximos.total ?? 0),
+          quantidade: Number(rowProximos.quantidade ?? 0),
         },
       };
     } catch (error) {
+      console.error("Erro no GastosFixosRepository.obterResumoGastosFixos:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
 
-  async inserirGastoFixo(gastoFixo, id_usuario) {
+  async inserirGastoFixo(dadosGastoFixo, id_usuario) { // Assinatura mantida, mas id_usuario pode vir no objeto
     try {
-      const sql = `
-        INSERT INTO gastos_fixos
-          (id_usuario, tipo, titulo, descricao, valor, dia_vencimento, recorrencia, ativo)
-        VALUES
-          (?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-
-      const params = [
-        Number(id_usuario),
-        String(gastoFixo.tipo),
-        String(gastoFixo.titulo),
-        gastoFixo.descricao ? String(gastoFixo.descricao) : null,
-        Number(gastoFixo.valor),
-        Number(gastoFixo.dia_vencimento),
-        String(gastoFixo.recorrencia ?? "mensal"),
-        Number(gastoFixo.ativo ?? 1),
-      ];
-
-      const result = await this.database.executaComando(sql, params);
-
-      return {
-        mensagem: "Gasto fixo criado com sucesso.",
-        id_gasto_fixo: result.insertId,
-      };
+        // Garante que o ID do usuário está no payload
+        const payload = { ...dadosGastoFixo, idUsuario: id_usuario };
+        
+        const novoGasto = await GastosFixosModel.create(payload);
+        
+        return {
+            mensagem: "Gasto fixo criado com sucesso.",
+            id_gasto_fixo: novoGasto.idGastoFixo,
+        };
     } catch (error) {
+      console.error("Erro no GastosFixosRepository.inserirGastoFixo:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
@@ -120,34 +116,53 @@ export default class GastosFixosRepository {
   async listarGastosFixos(id_usuario, opts = {}) {
     try {
       const somenteAtivos = opts?.somenteAtivos === true;
+      const whereClause = { idUsuario: id_usuario };
+      if (somenteAtivos) {
+          whereClause.ativo = 1;
+      }
 
-      const whereAtivo = somenteAtivos ? " AND gf.ativo = 1 " : "";
+      // Usando Sequelize para listagem simples com ordenação
+      // Para o campo calculado 'categoria_exibicao', usamos attributes com literal
+      const gastos = await GastosFixosModel.findAll({
+          attributes: [
+              'idGastoFixo',
+              'tipo',
+              [sequelize.literal(`CASE 
+                  WHEN tipo IN ('luz','agua','telefone') THEN 'Utilidades' 
+                  WHEN tipo IN ('internet','assinatura') THEN 'Assinaturas' 
+                  ELSE 'Outros' 
+               END`), 'categoria_exibicao'],
+              'titulo',
+              'descricao',
+              'valor',
+              'diaVencimento',
+              'recorrencia',
+              'ativo'
+          ],
+          where: whereClause,
+          order: [
+              ['ativo', 'DESC'],
+              ['diaVencimento', 'ASC'],
+              ['titulo', 'ASC']
+          ],
+          raw: true // Retorna objetos planos
+      });
 
-      const sql = `
-        SELECT
-          gf.id_gasto_fixo,
-          gf.tipo,
-          CASE
-            WHEN gf.tipo IN ('luz','agua','telefone') THEN 'Utilidades'
-            WHEN gf.tipo IN ('internet','assinatura') THEN 'Assinaturas'
-            ELSE 'Outros'
-          END AS categoria_exibicao,
-          gf.titulo,
-          gf.descricao,
-          gf.valor,
-          gf.dia_vencimento,
-          gf.recorrencia,
-          gf.ativo
-        FROM gastos_fixos gf
-        WHERE gf.id_usuario = ?
-        ${whereAtivo}
-        ORDER BY gf.ativo DESC, gf.dia_vencimento ASC, gf.titulo ASC
-      `;
+      // Mapeamento para snake_case para manter compatibilidade com o front
+      return gastos.map(g => ({
+          id_gasto_fixo: g.idGastoFixo,
+          tipo: g.tipo,
+          categoria_exibicao: g.categoria_exibicao,
+          titulo: g.titulo,
+          descricao: g.descricao,
+          valor: g.valor,
+          dia_vencimento: g.diaVencimento,
+          recorrencia: g.recorrencia,
+          ativo: g.ativo
+      }));
 
-      const rows = await this.database.executaComando(sql, [Number(id_usuario)]);
-
-      return Array.isArray(rows) ? rows : [];
     } catch (error) {
+      console.error("Erro no GastosFixosRepository.listarGastosFixos:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
@@ -155,15 +170,23 @@ export default class GastosFixosRepository {
 
   async buscarGastoFixoPorIdEUsuario(id_gasto_fixo, id_usuario) {
     try {
-      const sql = `
-        SELECT id_gasto_fixo, id_usuario, ativo
-        FROM gastos_fixos
-        WHERE id_gasto_fixo = ? AND id_usuario = ?
-        LIMIT 1
-      `;
-      const rows = await this.database.executaComando(sql, [Number(id_gasto_fixo), Number(id_usuario)]);
-      return Array.isArray(rows) && rows.length ? rows[0] : null;
+      const gasto = await GastosFixosModel.findOne({
+          where: { idGastoFixo: id_gasto_fixo, idUsuario: id_usuario },
+          attributes: ['idGastoFixo', 'idUsuario', 'ativo'],
+          raw: true
+      });
+      
+      if (gasto) {
+          // Mapeia para snake_case se necessário pelo service
+          return {
+              id_gasto_fixo: gasto.idGastoFixo,
+              id_usuario: gasto.idUsuario,
+              ativo: gasto.ativo
+          };
+      }
+      return null;
     } catch (error) {
+      console.error("Erro no GastosFixosRepository.buscarGastoFixoPorIdEUsuario:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
@@ -171,19 +194,13 @@ export default class GastosFixosRepository {
 
   async atualizarAtivoGastoFixo(id_gasto_fixo, id_usuario, ativo) {
     try {
-      const sql = `
-        UPDATE gastos_fixos
-        SET ativo = ?
-        WHERE id_gasto_fixo = ? AND id_usuario = ?
-      `;
-      const result = await this.database.executaComando(sql, [
-        Number(ativo),
-        Number(id_gasto_fixo),
-        Number(id_usuario),
-      ]);
-
-      return result;
+      const [affectedRows] = await GastosFixosModel.update(
+          { ativo: Number(ativo) },
+          { where: { idGastoFixo: id_gasto_fixo, idUsuario: id_usuario } }
+      );
+      return { affectedRows };
     } catch (error) {
+      console.error("Erro no GastosFixosRepository.atualizarAtivoGastoFixo:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
@@ -191,6 +208,7 @@ export default class GastosFixosRepository {
 
   async obterGastosFixosPorCategoria(id_usuario) {
     try {
+      // Query agregada complexa com GROUP BY e CASE - Melhor manter raw
       const sql = `
         SELECT
           CASE
@@ -208,18 +226,21 @@ export default class GastosFixosRepository {
             END
           ), 2) AS total
         FROM gastos_fixos
-        WHERE id_usuario = ?
+        WHERE id_usuario = :id_usuario
           AND ativo = 1
         GROUP BY categoria
         ORDER BY total DESC;
       `;
 
-      const rows = await this.database.executaComando(sql, [Number(id_usuario)]);
-      return Array.isArray(rows) ? rows : [];
+      const rows = await sequelize.query(sql, {
+          replacements: { id_usuario },
+          type: QueryTypes.SELECT
+      });
+      return rows;
     } catch (error) {
+      console.error("Erro no GastosFixosRepository.obterGastosFixosPorCategoria:", error.message);
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
-
 }

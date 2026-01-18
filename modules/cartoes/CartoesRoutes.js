@@ -44,5 +44,11 @@ router.post(
   (req, res, next) => cartoesController.pagarFatura(req, res, next)
 );
 
+// rota para pegar todos os cartoes
+router.get(
+  "/cartoes/:id_usuario", 
+  (req, res, next) => cartoesController.obterTodosCartoes(req, res, next)
+);
+
   return router;
 }

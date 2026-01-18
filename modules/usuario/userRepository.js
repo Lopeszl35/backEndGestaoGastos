@@ -3,10 +3,8 @@ import NaoEncontrado from "../../errors/naoEncontrado.js";
 
 class UserRepository {
 
-  // Agora apenas atualiza, a validação de saldo é feita antes.
+  // método do listerner para diminuir saldo após gastos inserido
   async diminuirSaldoAtual({ id_usuario, valor, connection }) {
-    // Esse método não deve ser chamado diretamente se usar a nova lógica do Service.
-    // Mas se for, age como um update simples de decremento no banco.
     const usuario = await UsuarioModel.findByPk(id_usuario, { transaction: connection });
     if (!usuario) throw new NaoEncontrado("Usuário não encontrado.");
     

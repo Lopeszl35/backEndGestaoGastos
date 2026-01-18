@@ -1,4 +1,5 @@
 import NaoEncontrado from "../../errors/naoEncontrado.js";
+import { GastoFixoEntity } from "./domain/GastoFixoEntity.js";
 
 export default class GastosFixosService {
   constructor(GastosFixosRepository) {
@@ -14,16 +15,13 @@ export default class GastosFixosService {
     }
   }
 
-  async addGastoFixo(gastoFixo, id_usuario) {
+  async addGastoFixo(gastoFixoDTO, id_usuario) {
     try {
-      // Regra mínima: normalizar strings
-      const payload = {
-        ...gastoFixo,
-        titulo: String(gastoFixo.titulo).trim(),
-        descricao: gastoFixo.descricao ? String(gastoFixo.descricao).trim() : null,
-      };
+      // Instancia Entity (Valida e Normaliza)
+      const entity = new GastoFixoEntity({ ...gastoFixoDTO, id_usuario });
 
-      return await this.GastosFixosRepository.inserirGastoFixo(payload, id_usuario);
+      // Passa objeto persistence para o repository
+      return await this.GastosFixosRepository.inserirGastoFixo(entity.toPersistence(), id_usuario);
     } catch (error) {
       console.error("Erro no GastosFixosService.addGastoFixo:", error.message);
       throw error;
@@ -43,7 +41,7 @@ export default class GastosFixosService {
     }
   }
 
-   async toggleAtivoGastoFixo(id_gasto_fixo, id_usuario, ativo) {
+  async toggleAtivoGastoFixo(id_gasto_fixo, id_usuario, ativo) {
     try {
       const gasto = await this.GastosFixosRepository.buscarGastoFixoPorIdEUsuario(
         id_gasto_fixo,
@@ -54,10 +52,13 @@ export default class GastosFixosService {
         throw new NaoEncontrado("Gasto fixo não encontrado para este usuário.");
       }
 
+      // Validação simples do input ativo
+      const novoStatus = (Number(ativo) === 1 || ativo === true) ? 1 : 0;
+
       await this.GastosFixosRepository.atualizarAtivoGastoFixo(
         id_gasto_fixo,
         id_usuario,
-        ativo
+        novoStatus
       );
 
       return { mensagem: "Status atualizado com sucesso." };
@@ -67,9 +68,9 @@ export default class GastosFixosService {
     }
   }
 
-   async getTelaGastosFixos(id_usuario) {
+  async getTelaGastosFixos(id_usuario) {
     try {
-      // roda em paralelo pra performance
+      // Executa em paralelo para desempenho
       const [resumo, gastosPorCategoria, lista] = await Promise.all([
         this.GastosFixosRepository.obterResumoGastosFixos(id_usuario),
         this.GastosFixosRepository.obterGastosFixosPorCategoria(id_usuario),
