@@ -14,6 +14,7 @@ export default async ({ app }) => {
   const { default: GastosFixosRoutes } = await import("../modules/gastos_fixos/GastosFixosRoutes.js");
   const { default: CartoesRoutes } = await import("../modules/cartoes/CartoesRoutes.js");
   const { default: FinanciamentosRoutes } = await import("../modules/financiamento/FinanciamentosRoutes.js");
+  const { default: DashboradRoutes } = await import("../modules/dashboard/DashboardRoutes.js");
 
   // Injeta no Express
   app.use(routerTest);
@@ -23,6 +24,7 @@ export default async ({ app }) => {
   app.use(GastosFixosRoutes(DependencyInjector.get("GastosFixosController")));
   app.use("/api/", CartoesRoutes(DependencyInjector.get("CartoesController")));
   app.use("/api/financiamentos", FinanciamentosRoutes(DependencyInjector.get("FinanciamentosController")));
+  app.use("/api/dashboard", DashboradRoutes(DependencyInjector.get("DashboardController")));
 
   // Middlewares Finais (404 e Erro)
   app.use(manipulador404);
