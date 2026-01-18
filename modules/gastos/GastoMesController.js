@@ -45,10 +45,12 @@ export default class GastoMesController {
 
   async getGastosTotaisPorCategoria(req, res, next) {
     try {
-      const { id_usuario, inicio, fim } = req.query;
+      const { inicio, fim } = req.query;
+      const idUsuario = req.query.id_usuario;
+      console.log("idUsuario no controler: ", idUsuario);
       
       const result = await this.GastoMesService.getGastosTotaisPorCategoria(
-        Number(id_usuario),
+        Number(idUsuario),
         inicio || null,
         fim || null
       );
@@ -62,8 +64,6 @@ export default class GastoMesController {
   async addGasto(req, res, next) {
     const gasto = req.body.gastos; 
     const id_usuario = Number(req.query.id_usuario);
-    console.log("Gasto recebido na controller:", gasto, "Id do usuário:", id_usuario);
-
     try {
       const result = await this.TransactionUtil.executeTransaction(
         async (connection) => {

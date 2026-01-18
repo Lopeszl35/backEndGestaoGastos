@@ -116,17 +116,27 @@ export class CartoesController {
   async pagarFatura(req, res, next) {
     try {
       const idUsuario = Number(req.params.id_usuario);
-      const id_cartao = Number(req.params.id_cartao);
+      const idCartao = Number(req.params.id_cartao);
       const { valorPagamento, ano, mes } = req.body;
 
       const resultado = await this.cartoesService.pagarFatura({
         idUsuario,
-        id_cartao,
+        idCartao,
         valorPagamento,
         ano,
         mes,
       });
 
+      return res.status(200).json(resultado);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async obterTodosCartoes(req, res, next) {
+    try {
+      const idUsuario = Number(req.params.id_usuario);
+      const resultado = await this.cartoesService.obterTodosCartoes(idUsuario);
       return res.status(200).json(resultado);
     } catch (error) {
       next(error);

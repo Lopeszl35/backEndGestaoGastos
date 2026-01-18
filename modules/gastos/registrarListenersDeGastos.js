@@ -2,6 +2,8 @@ import { formatarDataParaBanco } from "../../utils/formatarDataParaBanco.js";
 
 export const EVENTO_GASTO_INSERIDO = "GASTO_INSERIDO";
 export const EVENTO_FORMA_PAGAMENTO_CREDITO = "CREDITO";
+export const EVENTO_GASTO_EDITADO = "GASTO_EDITADO";
+export const EVENTO_GASTO_DELETADO = "GASTO_DELETADO";
 
 // Função auxiliar para esperar (Sleep)
 const esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -16,14 +18,13 @@ export default function registrarListenersDeGastos({
 }) {
   if (!barramentoEventos) throw new Error("barramentoEventos não informado");
   if (!gastoMesRepository) throw new Error("gastoMesRepository não informado");
-  if (!alertasService) throw new Error("alertasService não informado");
+  // Outras validações...
 
   // 1) Atualiza total_gastos_mes.gasto_atual_mes
   barramentoEventos.registrarListener(
     EVENTO_GASTO_INSERIDO,
     async (payload) => {
       const { id_usuario, gasto, connection } = payload;
-
       await gastoMesRepository.incrementarGastoAtualMes({
         id_usuario,
         data_gasto: gasto.data_gasto,
@@ -38,73 +39,87 @@ export default function registrarListenersDeGastos({
     EVENTO_GASTO_INSERIDO,
     async (payload) => {
       const { id_usuario, gasto, id_gasto, connection } = payload;
-
-      await alertasService.verificarECriarAlertasCategoriaAoInserirGasto({
-        id_usuario,
-        id_categoria: gasto.id_categoria,
-        data_gasto: gasto.data_gasto,
-        id_gasto_referencia: id_gasto,
-        connection,
-      });
+      // Certifique-se que alertasService tem esse método
+      if (alertasService.verificarECriarAlertasCategoriaAoInserirGasto) {
+          await alertasService.verificarECriarAlertasCategoriaAoInserirGasto({
+            id_usuario,
+            id_categoria: gasto.id_categoria,
+            data_gasto: gasto.data_gasto,
+            id_gasto_referencia: id_gasto,
+            connection,
+          });
+      }
     }
   );
 
-  // 3) Diminuir saldo atual do usuário após gastos
+  // 3) Diminuir saldo atual do usuário (agora chamando o método novo do service/repo refatorado)
   barramentoEventos.registrarListener(
     EVENTO_GASTO_INSERIDO,
     async (payload) => {
       const { id_usuario, gasto, connection } = payload;
-
-      await userRepository.diminuirSaldoAtual({
-        id_usuario,
-        valor: gasto.valor,
-        connection,
-      });
+      if (userRepository.diminuirSaldoAtual) {
+          await userRepository.diminuirSaldoAtual({
+            id_usuario,
+            valor: gasto.valor,
+            connection,
+          });
+      }
     }
   );
 
-  // 4) Associar valor da compra ao cartão de crédito com Retry e Fallback
+ // 4) Associar valor da compra ao cartão de crédito
   barramentoEventos.registrarListener(
     EVENTO_FORMA_PAGAMENTO_CREDITO,
     async (payload) => {
       const { id_usuario, gasto } = payload; 
-      console.log("Entrou em gasto credito");
+      console.log("Entrou em gasto credito listener");
 
-      // Validação de segurança (Fail Fast)
-      if (!gasto.uuidCartao) {
-        console.error("ERRO CRÍTICO: Gasto crédito sem uuidCartao.", gasto);
+      if (!gasto.id_cartao && !gasto.uuidCartao) {
+        console.error("ERRO: Gasto crédito sem cartão identificado.");
         return;
       }
 
-      // -- Buscando categoria no banco
-      // O 'gasto' vem apenas com id_categoria (ex: 8). Precisamos do nome (ex: "Lazer").
-      let nomeCategoria = "Outros"
+      // Busca nome da categoria
+      let nomeCategoria = "Outros";
       try {
         if (gasto.id_categoria && categoriasRepository) {
-          console.log("entrou no if, gastos recebido: ", gasto.id_categoria);
           const catDb = await categoriasRepository.buscarPorId(gasto.id_categoria, id_usuario);
           console.log("catDb: ", catDb);
           if (catDb && catDb.nome) {
-            nomeCategoria = catDb.nome
+            nomeCategoria = catDb.nome;
           }
         }
       } catch (error) {
         console.warn(`Erro ao buscar categoria do gasto: ${error.message}`);
       }
 
-     const dataFormatada = String(gasto.data_gasto).replace(/\//g, "-");
+      // --- CORREÇÃO DE DATA AQUI ---
+      // Converte qualquer formato de entrada para um objeto Date e depois para string YYYY-MM-DD
+      let dataFormatada;
+      try {
+          // Garante que a data seja interpretada corretamente
+          const dataObj = new Date(gasto.data_gasto);
+          if (isNaN(dataObj.getTime())) {
+              throw new Error("Data inválida");
+          }
+          // Pega YYYY-MM-DD (ISO 8601 part)
+          dataFormatada = dataObj.toISOString().split('T')[0];
+      } catch (e) {
+          // Fallback: se der erro na conversão, tenta usar o que veio (mas o Entity vai validar)
+          dataFormatada = String(gasto.data_gasto);
+      }
 
       const dadosLancamento = {
         descricao: gasto.descricao,
         categoria: nomeCategoria,
-        valorTotal: gasto.valor,
-        dataCompra: dataFormatada,
+        valorTotal: Number(gasto.valor),
+        dataCompra: dataFormatada, // Agora envia "YYYY-MM-DD" com hífens
         parcelado: false,
         numeroParcelas: 1,
       };
-      console.log("dadosLancamento: ", dadosLancamento);
 
-      // --- LÓGICA DE RETRY ---
+      let uuidParaCartao = gasto.uuidCartao;
+      
       const TENTATIVAS_MAXIMAS = 3;
       let tentativa = 1;
       let sucesso = false;
@@ -113,37 +128,26 @@ export default function registrarListenersDeGastos({
         try {
           await cartoesService.criarLancamentoCartao({
             idUsuario: id_usuario,
-            uuidCartao: gasto.uuidCartao,
+            uuidCartao: uuidParaCartao,
             dadosLancamento,
           });
-
           sucesso = true;
-          console.log(
-            `Lançamento cartão processado com sucesso na tentativa ${tentativa}.`
-          );
+          console.log(`Lançamento cartão processado na tentativa ${tentativa}.`);
         } catch (error) {
           console.warn(`Tentativa ${tentativa} falhou: ${error.message}`);
-
+          
           if (tentativa < TENTATIVAS_MAXIMAS) {
-            // Backoff Exponencial: Espera 1s, depois 2s, depois sai.
-            const tempoEspera = 1000 * Math.pow(2, tentativa - 1);
-            await esperar(tempoEspera);
+            await esperar(1000 * Math.pow(2, tentativa - 1));
             tentativa++;
           } else {
-            // --- FALHA TOTAL (FALLBACK) ---
-            console.error("Todas as tentativas de processar cartão falharam.");
-
-            // Notificar o usuário que algo deu errado
-            // Assumindo que seu AlertasService tem um método genérico de criar alerta
-            try {
-              await alertasService.criarAlertaSistema({
-                id_usuario,
-                tipo_alerta: "ERRO_PROCESSAMENTO",
-                mensagem: `Não foi possível vincular a despesa '${gasto.descricao}' ao seu cartão automaticamente. Verifique seus lançamentos.`,
-                severidade: "ALTA",
-              });
-            } catch (erroAlerta) {
-              console.error("Falha até ao criar o alerta de erro:", erroAlerta);
+            console.error("Falha final ao processar cartão.");
+            if (alertasService?.criarAlertaSistema) {
+                await alertasService.criarAlertaSistema({
+                    id_usuario,
+                    tipo_alerta: "ERRO_PROCESSAMENTO",
+                    mensagem: `Falha ao lançar despesa '${gasto.descricao}' no cartão: ${error.message}`,
+                    severidade: "ALTA"
+                });
             }
           }
         }

@@ -386,10 +386,12 @@ export class CartoesService {
   }
 
   async pagarFatura({ idUsuario, idCartao, valorPagamento, ano, mes, transaction }) {
+    console.log("dados recebidos: ", { idUsuario, idCartao, valorPagamento, ano, mes });
     
     const operacaoPagamento = async (t) => {
         // 1. Buscar Fatura
         const fatura = await this.faturasRepositorio.buscarFaturaAtual(idCartao, idUsuario, ano, mes, t);
+        console.log("fatura encontrada", fatura);
         
         if (!fatura) throw new naoEncontrado("Fatura não encontrada.");
         if (fatura.status === 'PAGA') throw new RequisicaoIncorreta("Esta fatura já está quitada.");
@@ -440,4 +442,18 @@ export class CartoesService {
         return await sequelize.transaction(operacaoPagamento);
     }
   }
+
+  async obterTodosCartoes(idUsuario) {
+    try {
+      const cartoes = await this.cartoesRepositorio.obterTodosCartoes(idUsuario);
+      if (!cartoes) return {
+        cartoes: [],
+        message: "Cartões não encontrados."
+      };
+      return cartoes;
+    } catch (error) {
+      throw error;
+    }
+  }
+
 }
