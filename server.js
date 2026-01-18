@@ -5,7 +5,7 @@ import loaders from "./loaders/index.js"; // Importa o orquestrador
 // Carrega variáveis de ambiente imediatamente
 dotenv.config();
 
-async function startServer() {
+async function startServer() {  
   console.log("🚀 Inicializando servidor...");
 
   const app = express();
