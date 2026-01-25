@@ -27,7 +27,7 @@ export default class DashboardService {
             this.repository.buscarUltimosGastos(idUsuario, 5)
         ]);
 
-        const saldoAtual = Number(usuarioDados?.saldo_atual || 0);
+        const saldoAtual = Number(usuarioDados?.saldoAtual || 0);
         const receitas = Number(totalReceitas);
         const variaveis = Number(totalVariaveis);
         const fixos = Number(totalFixos);
@@ -43,8 +43,8 @@ export default class DashboardService {
             resumoFinanceiro: {
                 saldoAtual,
                 receitas,
-                despesas: totalDespesas,
-                balanco: receitas - totalDespesas
+                despesas: totalDespesas.toFixed(2),
+                balanco: receitas.toFixed(2) - totalDespesas.toFixed(2)
             },
             detalhamentoDespesas: {
                 fixas: fixos,
