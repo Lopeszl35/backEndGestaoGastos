@@ -22,7 +22,7 @@ export default async ({ app }) => {
   app.use(CategoriasRoutes(DependencyInjector.get("CategoriasController")));
   app.use(GastoMesRoutes(DependencyInjector.get("GastoMesController")));
   app.use(GastosFixosRoutes(DependencyInjector.get("GastosFixosController")));
-  app.use("/api/", CartoesRoutes(DependencyInjector.get("CartoesController")));
+  app.use("/api", CartoesRoutes(DependencyInjector.get("CartoesController")));
   app.use("/api/financiamentos", FinanciamentosRoutes(DependencyInjector.get("FinanciamentosController")));
   app.use("/api/dashboard", DashboradRoutes(DependencyInjector.get("DashboardController")));
 
