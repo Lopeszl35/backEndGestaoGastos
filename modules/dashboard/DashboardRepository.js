@@ -10,14 +10,14 @@ export class DashboardRepository {
     
     async buscarSaldoUsuario(idUsuario) {
         return await UsuarioModel.findByPk(idUsuario, {
-            attributes: ['saldo_atual', 'nome']
+            attributes: ['saldoAtual', 'nome'],
         });
     }
 
     async somarReceitasNoPeriodo(idUsuario, dataInicio, dataFim) {
         const total = await ReceitaModel.sum('valor', {
             where: {
-                idUsuario: idUsuario,
+                id_usuario: idUsuario,
                 dataReceita: { [Op.between]: [dataInicio, dataFim] }
             }
         });
@@ -27,10 +27,10 @@ export class DashboardRepository {
     async somarGastosVariaveisNoPeriodo(idUsuario, dataInicio, dataFim) {
         const total = await GastosModel.sum('valor', {
             where: {
-                idUsuario: idUsuario,
-                dataGasto: { [Op.between]: [dataInicio, dataFim] },
-                formaPagamento: { [Op.ne]: 'CREDITO' },
-                idGastoFixo: null
+                id_usuario: idUsuario,
+                data_gasto: { [Op.between]: [dataInicio, dataFim] },
+                forma_pagamento: { [Op.ne]: 'CREDITO' },
+                id_gasto_fixo: null
             }
         });
         return total || 0;
@@ -39,7 +39,7 @@ export class DashboardRepository {
     async somarGastosFixosAtivos(idUsuario) {
         const total = await GastosFixosModel.sum('valor', {
             where: {
-                idUsuario: idUsuario,
+                id_usuario: idUsuario,
                 ativo: 1
             }
         });
@@ -49,7 +49,7 @@ export class DashboardRepository {
     async buscarFaturaDoMes(idUsuario, mes, ano) {
         const total = await CartaoFaturaModel.sum('total_lancamentos', {
             where: {
-                idUsuario: idUsuario,
+                id_usuario: idUsuario,
                 mes: mes,
                 ano: ano
             }
@@ -59,7 +59,7 @@ export class DashboardRepository {
 
     async buscarUltimasReceitas(idUsuario, limite = 5) {
         return await ReceitaModel.findAll({
-            where: { idUsuario },
+            where: { id_usuario: idUsuario },
             order: [['dataReceita', 'DESC']],
             limit: limite,
             attributes: ['idReceita', 'descricao', 'valor', 'dataReceita', 'origemLancamento']
@@ -68,16 +68,16 @@ export class DashboardRepository {
 
     async buscarUltimosGastos(idUsuario, limite = 5) {
         return await GastosModel.findAll({
-            where: { idUsuario },
-            order: [['dataGasto', 'DESC']],
+            where: { id_usuario: idUsuario },
+            order: [['data_gasto', 'DESC']],
             limit: limite,
             include: [{
                 model: CategoriasModel,
                 as: 'categoria', 
-                attributes: ['nome', 'cor'],
+                attributes: ['nome'],
                 required: false
             }],
-            attributes: ['idGasto', 'descricao', 'valor', 'dataGasto', 'formaPagamento']
+            attributes: ['id_gasto', 'descricao', 'valor', 'data_gasto', 'forma_pagamento']
         });
     }
 }

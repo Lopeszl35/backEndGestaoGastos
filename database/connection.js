@@ -23,34 +23,34 @@ class Database {
     const host = pick(
       "MYSQLHOST",
       process.env.MYSQLHOST,
-      "DB_HOST_PROD",
-      process.env.DB_HOST_PROD
+      "DB_HOST",
+      process.env.DB_HOST
     );
     const port = Number(
       pick(
         "MYSQLPORT",
         process.env.MYSQLPORT,
-        "DB_PORT_PROD",
-        process.env.DB_PORT_PROD
+        "DB_PORT",
+        process.env.DB_PORT
       ) || 3306
     );
     const user = pick(
       "MYSQLUSER",
       process.env.MYSQLUSER,
-      "DB_USER_PROD",
-      process.env.DB_USER_PROD
+      "DB_USER",
+      process.env.DB_USER
     );
     const password = pick(
       "MYSQLPASSWORD",
       process.env.MYSQLPASSWORD,
-      "DB_PASS_PROD",
-      process.env.DB_PASS_PROD
+      "DB_PASS",
+      process.env.DB_PASS
     );
     const database = pick(
       "MYSQLDATABASE",
       process.env.MYSQLDATABASE,
-      "DB_NAME_PROD",
-      process.env.DB_NAME_PROD
+      "DB_NAME",
+      process.env.DB_NAME
     );
 
     console.log("DB CONFIG (sanity):", { host, port, user, database });

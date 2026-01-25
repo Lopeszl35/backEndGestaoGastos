@@ -112,6 +112,7 @@ export default async ({ database }) => {
   registrarListenersDeCartoes({
     barramentoEventos: DependencyInjector.get("BarramentoEventos"),
     userService: DependencyInjector.get("UserService"),
+    gastoMesRepository: DependencyInjector.get("GastoMesRepository"),
   });
 
   const { default: registrarListenersDeFinanciamentos } = await import("../modules/financiamento/registrarListenersDeFinanciamentos.js");
