@@ -456,4 +456,32 @@ export class CartoesService {
     }
   }
 
+  async deletarCartao(idUsuario, uuidCartao) {
+    console.log("Deletar cartão chamado com: ", idUsuario, uuidCartao);
+    try {
+      const cartaoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario);
+      if (!cartaoModel) throw new naoEncontrado("Cartão não encontrado.");
+
+      await this.cartoesRepositorio.deletarCartao(idUsuario, cartaoModel.uuid_cartao);
+
+      return { mensagem: "Cartão deletado com sucesso." };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async editarCartao(idUsuario, uuidCartao, dadosCartao) {
+    console.log("Editar cartão chamado com: ", idUsuario, uuidCartao, dadosCartao);
+    try {
+      const cartaoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario);
+      console.log("Cartão para editar: ", cartaoModel);
+      if (!cartaoModel) throw new naoEncontrado("Cartão nao encontrado.");
+
+      const cartaoEditado = await this.cartoesRepositorio.editarCartao(idUsuario, cartaoModel.uuid_cartao, dadosCartao);
+      return cartaoEditado;
+    } catch (error) {
+      throw error;
+    }
+  }
+
 }

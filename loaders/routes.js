@@ -1,4 +1,3 @@
-// loaders/routes.js
 import DependencyInjector from "../utils/DependencyInjector.js";
 import manipulador404 from "../middleware/manipulador404.js";
 import manipuladorDeErros from "../middleware/manipuladorDeErros.js";
@@ -16,17 +15,26 @@ export default async ({ app }) => {
   const { default: FinanciamentosRoutes } = await import("../modules/financiamento/FinanciamentosRoutes.js");
   const { default: DashboradRoutes } = await import("../modules/dashboard/DashboardRoutes.js");
 
-  // Injeta no Express
+  // Rotas Específicas PRIMEIRO (Boas práticas do Express)
   app.use(routerTest);
   app.use(UserRoutes(DependencyInjector.get("UserController")));
   app.use(CategoriasRoutes(DependencyInjector.get("CategoriasController")));
   app.use(GastoMesRoutes(DependencyInjector.get("GastoMesController")));
   app.use(GastosFixosRoutes(DependencyInjector.get("GastosFixosController")));
-  app.use("/api", CartoesRoutes(DependencyInjector.get("CartoesController")));
+  
+  // ✅ CORREÇÃO: Mudei de "/api/" para "/api" (sem barra final) e movi para uma ordem segura
+  // Mas o ideal é não usar "/api/" genérico se as rotas internas já tem prefixo.
+  // Vamos manter o padrão, mas coloque rotas mais específicas antes.
+  
   app.use("/api/financiamentos", FinanciamentosRoutes(DependencyInjector.get("FinanciamentosController")));
   app.use("/api/dashboard", DashboradRoutes(DependencyInjector.get("DashboardController")));
+  
+  // ✅ A rota de cartões deve ser tratada com cuidado. 
+  // No CartoesRoutes.js, as rotas são definidas como "/cartoes/...".
+  // Então se usarmos app.use("/api", ...), a rota final será "/api/cartoes/...".
+  app.use("/api", CartoesRoutes(DependencyInjector.get("CartoesController")));
 
-  // Middlewares Finais (404 e Erro)
+  // Middlewares Finais
   app.use(manipulador404);
   app.use(manipuladorDeErros);
   
