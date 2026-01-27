@@ -92,20 +92,13 @@ export class CartoesController {
     try {
       const idUsuario = Number(req.params.id_usuario);
       const uuidCartao = String(req.params.cartao_uuid);
+      const dadosCartao = req.body; 
 
-      const resultado = await this.cartoesService.editarCartao({
+      const resultado = await this.cartoesService.editarCartao(
         idUsuario,
         uuidCartao,
-        dadosCartao: {
-          nome: req.body.nome,
-          bandeira: req.body.bandeira,
-          ultimos4: req.body.ultimos4,
-          corHex: req.body.corHex,
-          limite: req.body.limite,
-          diaFechamento: req.body.diaFechamento,
-          diaVencimento: req.body.diaVencimento,
-        },
-      });
+        dadosCartao
+      );
 
       return res.status(200).json(resultado);
     } catch (erro) {
@@ -137,6 +130,17 @@ export class CartoesController {
     try {
       const idUsuario = Number(req.params.id_usuario);
       const resultado = await this.cartoesService.obterTodosCartoes(idUsuario);
+      return res.status(200).json(resultado);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deletarCartao(req, res, next) {
+    try {
+      const idUsuario = Number(req.params.id_usuario);
+      const uuidCartao = String(req.params.cartao_uuid);
+      const resultado = await this.cartoesService.deletarCartao(idUsuario, uuidCartao);
       return res.status(200).json(resultado);
     } catch (error) {
       next(error);

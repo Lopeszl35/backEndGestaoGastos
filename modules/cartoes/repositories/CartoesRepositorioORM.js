@@ -3,14 +3,14 @@ import { CartaoCreditoModel } from "../../../database/models/index.js";
 export class CartoesRepositorioORM {
   async listarCartoesAtivosPorUsuario(idUsuario) {
     return CartaoCreditoModel.findAll({
-      where: { idUsuario, ativo: true },
+      where: { idUsuario },
       order: [["created_at", "DESC"]],
     });
   }
 
   async buscarCartaoPorUuidEUsuario(uuidCartao, idUsuario) {
     return CartaoCreditoModel.findOne({
-      where: { uuid_cartao: uuidCartao, idUsuario, ativo: true },
+      where: { uuid_cartao: uuidCartao, idUsuario, },
     });
   }
 
@@ -88,6 +88,30 @@ export class CartoesRepositorioORM {
         order: [["created_at", "DESC"]],
       });
       return cartoes;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async deletarCartao(idUsuario, uuidCartao) {
+    try {
+      const resultado = await CartaoCreditoModel.destroy({
+        where: { idUsuario, uuid_cartao: uuidCartao },
+      });
+      return resultado;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async editarCartao(idUsuario, uuidCartao, dadosCartao) {
+    try {
+      const cartao = await CartaoCreditoModel.findOne({
+        where: { idUsuario, uuid_cartao: uuidCartao },
+      });
+      cartao.set(dadosCartao);
+      await cartao.save();
+      return cartao;
     } catch (error) {
       throw error;
     }
