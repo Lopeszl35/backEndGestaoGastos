@@ -36,7 +36,7 @@ class CategoriasController {
 
   async updateCategoria(req, res, next) {
     const { id_categoria } = req.query;
-    const categoria = req.body;
+    const categoria = req.body.categoria;
   
     try {
       const result = await this.TransactionUtil.executeTransaction(
