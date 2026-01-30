@@ -35,13 +35,9 @@ class CategoriasController {
   }
 
   async updateCategoria(req, res, next) {
-    const { id_categoria } = req.query; // ou req.params dependendo da sua rota
+    const { id_categoria } = req.query;
     const categoria = req.body;
-    
-    if (!id_categoria) {
-      return res.status(400).json({ message: "Id da categoria não informado." });
-    }
-
+  
     try {
       const result = await this.TransactionUtil.executeTransaction(
         async (connection) => {

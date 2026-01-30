@@ -3,7 +3,8 @@ import cors from "cors";
 import {
   validateCreateCategoria,
   validateGetCategorias,
-  validateDeleteCategoria
+  validateDeleteCategoria,
+  validateUpdateCategoria,
 } from "./categoriasValidade.js";
 
 const router = express.Router();
@@ -30,7 +31,7 @@ export default (categoriasController) => {
     categoriasController.reativarCategoria(req, res, next);
   });
 
-  router.patch("/updateCategoria", (req, res, next) => {
+  router.patch("/updateCategoria", validateUpdateCategoria, (req, res, next) => {
     categoriasController.updateCategoria(req, res, next);
   });
 

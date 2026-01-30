@@ -94,6 +94,7 @@ export default class CategoriasRepository {
   }
 
   async updateCategoria(id_categoria, categoria, transaction) {
+    console.log("dados para updateCategoria no Repository:", id_categoria, categoria);
     try {
       const [affectedRows] = await CategoriasModel.update(
         {

@@ -58,6 +58,13 @@ export default class CategoriasService {
         categoria,
         connection
       );
+
+      if (result.affectedRows === 0) {
+        return {
+          message: "Nenhuma categoria foi atualizada.",
+        }
+      }
+
       return result;
     } catch (error) {
       console.log("Erro ao atualizar categoria no service:", error.message);

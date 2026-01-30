@@ -59,3 +59,14 @@ export const validateDeleteCategoria = [
 
     handleValidation
 ]
+
+export const validateUpdateCategoria = [
+    query('id_categoria').exists().withMessage('Id da categoria obrigatório')
+    .isInt({ gt: 0 }).withMessage('Id da categoria deve ser um número inteiro positivo.')
+    .notEmpty().withMessage('Id da categoria não pode ser vazio.'),
+
+    body('categoria').exists().withMessage('Objeto categoria obrigatório')
+    .isObject().withMessage('categoria deve ser um objeto valido.'),
+
+    handleValidation
+]
