@@ -1,5 +1,6 @@
 import ValidationError from "../../../errors/ValidationError.js";
 import RequisicaoIncorreta from "../../../errors/RequisicaoIncorreta.js";
+import { token } from "morgan";
 
 export class UsuarioEntity {
   constructor({
@@ -44,7 +45,7 @@ export class UsuarioEntity {
     const valorNum = Number(valor);
     if (valorNum <= 0) throw new ValidationError("O valor do débito deve ser positivo.");
 
-    // REGRA DE NEGÓCIO: Não permitir saldo negativo (se for essa a regra do seu app)
+    // REGRA DE NEGÓCIO: Não permitir saldo negativo 
     if (this.saldo_atual < valorNum) {
       throw new RequisicaoIncorreta(
         `Saldo insuficiente. Saldo atual: R$${this.saldo_atual.toFixed(2)}, Tentativa: R$${valorNum.toFixed(2)}`
@@ -116,9 +117,10 @@ export class UsuarioEntity {
       email: this.email,
       perfil_financeiro: this.perfil_financeiro,
       salario_mensal: this.salario_mensal,
-      saldo_atual: this.saldo_atual, // <--- O FRONT RECEBE ASSIM
+      saldo_atual: this.saldo_atual,
       saldo_inicial: this.saldo_inicial,
-      data_cadastro: this.data_cadastro
+      data_cadastro: this.data_cadastro,
+      token: this.token
     };
   }
 }
