@@ -33,16 +33,15 @@ class UserService {
 
       // 4 commit da transação
       await transaction.commit();
-
-      // 5. Prepara o retorno
-      // CORREÇÃO: Não instanciamos 'new UsuarioEntity' de novo com o resultado do banco
-      // para evitar erros de validação com dados formatados pelo Sequelize.
-      // Atualizamos a entidade que já temos em memória com o ID gerado e retornamos.
       novoUsuario.id_usuario = resultModel.insertId;
+
+      // 5. Gera o token com os dados corretos
+      const token = generateToken(novoUsuario.toPublicDTO());
 
       return { 
           insertId: resultModel.insertId, 
-          ...novoUsuario.toPublicDTO() 
+          ...novoUsuario.toPublicDTO(), 
+          token
       };
       
     } catch (error) {

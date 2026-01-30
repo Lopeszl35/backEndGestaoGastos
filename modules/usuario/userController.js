@@ -8,7 +8,6 @@ class UserController {
 
   async createUser(req, res, next) {
     const { user } = req.body;
-    console.log("user recebido no controller: ", user);
     try {
       const response = await this.UserService.createUser(user);
       if (!response.insertId) {

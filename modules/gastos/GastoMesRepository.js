@@ -40,7 +40,7 @@ export default class GastoMesRepository {
   async getLimiteGastosMes(id_usuario, ano, mes) {
     try {
       const resultado = await TotalGastosMesModel.findOne({
-        where: { idUsuario: id_usuario, ano, mes },
+        where: { id_usuario: id_usuario, ano, mes },
         raw: true
       });
       console.log("getLimiteGastosMesRows: ", resultado);
