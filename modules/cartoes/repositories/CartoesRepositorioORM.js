@@ -123,6 +123,7 @@ export class CartoesRepositorioORM {
         where: { uuid_cartao: uuidCartao },
         attributes: ['id_cartao'],
         transactions: connection,
+        raw: true
       });
       return cartao;
     } catch (error) {

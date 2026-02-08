@@ -4,7 +4,15 @@ import RequisicaoIncorreta from "./RequisicaoIncorreta.js";
 class ErroSqlHandler {
   static tratarErroSql(error) {
     if (!error || !error.code) {
-      throw error; // erro que não veio do SQL
+      throw error;
+    }
+
+    const msg = this._getMensagemSql(error);
+
+    // DICA: Se a mensagem contiver "CONSTRAINT" e "failed", é uma violação de regra (Check Constraint),
+    // independente do código que o driver enviou (4025, 3819, etc).
+    if (msg.includes("CONSTRAINT") && msg.includes("failed")) {
+        throw this.erroCheckConstraint(error);
     }
 
     switch (error.code) {
@@ -26,12 +34,14 @@ class ErroSqlHandler {
       case "WARN_DATA_TRUNCATED":
         throw this.erroDadoTruncado(error);
 
-      case "ER_SIGNAL_EXCEPTION":
-        // Se você usa SIGNAL no banco, dá pra tratar aqui depois.
-        // Por enquanto cai no genérico com a mensagem original.
-        throw new ErroBase("Erro interno no banco de dados.", 500);
+      // O driver pode confundir erro de Constraint (4025) com erro de Tamanho (4025 antigo)
+      // Como já tratamos CONSTRAINT no if lá em cima, se cair aqui é realmente erro de tamanho/disco.
+      case "ER_INNODB_AUTOEXTEND_SIZE_OUT_OF_RANGE": 
+        throw this.erroTamanhoMaximoExcedido(error);
 
       default:
+        // Log para ajudar a descobrir novos códigos no futuro
+        console.error("Erro SQL não mapeado:", error.code, msg);
         throw new ErroBase("Erro interno no banco de dados.", 500);
     }
   }
@@ -39,6 +49,31 @@ class ErroSqlHandler {
   // -----------------------------
   // MAPEAMENTOS
   // -----------------------------
+
+  static erroCheckConstraint(error) {
+    const msg = this._getMensagemSql(error);
+    
+    // Tenta extrair o nome da constraint. 
+    // Padrão comum: CONSTRAINT `nome_da_regra` failed for ...
+    const match = msg.match(/CONSTRAINT `(.+?)` failed/i) || msg.match(/CONSTRAINT "(.+?)" failed/i);
+    const nomeConstraint = match ? match[1] : "desconhecida";
+
+    // Mapeamento amigável 
+    const mapaErros = {
+        "chk_gastos_cartao_credito": "Para gastos no Crédito, é obrigatório vincular um Cartão.",
+        "chk_valor_positivo": "O valor deve ser maior que zero.",
+        
+    };
+
+    const mensagemAmigavel = mapaErros[nomeConstraint];
+
+    if (mensagemAmigavel) {
+        return new RequisicaoIncorreta(mensagemAmigavel);
+    }
+
+    // Se não tiver tradução, retorna o erro técnico genérico mas claro
+    return new RequisicaoIncorreta(`Regra de validação do banco não atendida: ${nomeConstraint}`);
+  }
 
   static erroDuplicado(error) {
     const msg = this._getMensagemSql(error);
@@ -112,14 +147,6 @@ class ErroSqlHandler {
     return new RequisicaoIncorreta("Valor inválido ou muito grande para algum campo.");
   }
 
-  // -----------------------------
-  // UTIL (mantém a sua e melhora)
-  // -----------------------------
-
-  /**
-   * Mantive sua função, mas agora ela usa _getMensagemSql()
-   * e tenta outros padrões também.
-   */
   static extrairCampo(message) {
     if (!message) return null;
     // ER_BAD_NULL_ERROR: Column 'nome' cannot be null
@@ -127,9 +154,6 @@ class ErroSqlHandler {
     return match ? match[1] : null;
   }
 
-  // =============================
-  // 🔎 EXTRATORES NOVOS
-  // =============================
 
   static _getMensagemSql(error) {
     // para SQL puro: geralmente vem em error.message
@@ -177,6 +201,17 @@ class ErroSqlHandler {
     if (!message) return null;
     const match = message.match(/for key '(.+?)'/i);
     return match ? match[1] : null;
+  }
+
+  static erroTamanhoMaximoExcedido(error) {
+    if (error.sqlMessage.includes('cartao_credito')) {
+      return new RequisicaoIncorreta('Não foi possivel adicionar o gasto ao cartão devido ao limite.', 500);
+    }
+    return new RequisicaoIncorreta("Tamanho do campo excedido.", 500);
+  }
+
+  static _getMensagemSql(error) {
+    return String(error.sqlMessage || error.message || "");
   }
 }
 

@@ -175,6 +175,7 @@ export default class GastoMesRepository {
       };
     } catch (error) {
       console.error("Erro addGasto:", error);
+      ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
