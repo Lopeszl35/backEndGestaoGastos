@@ -134,10 +134,11 @@ export default class CategoriasRepository {
   }
 
   async getCategoriasInativas(id_usuario) {
+    console.log("idUsuario: ", id_usuario);
     try {
       const categorias = await CategoriasModel.findAll({
         where: {
-          idUsuario: id_usuario,
+          id_usuario: id_usuario,
           ativo: false,
         },
         raw: true, // Retorna objeto simples igual o driver mysql fazia

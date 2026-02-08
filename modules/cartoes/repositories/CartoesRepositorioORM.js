@@ -117,5 +117,18 @@ export class CartoesRepositorioORM {
     }
   }
 
+  async buscarCartaoPorUuid(uuidCartao, connection) {
+    try {
+      const cartao = await CartaoCreditoModel.findOne({
+        where: { uuid_cartao: uuidCartao },
+        attributes: ['id_cartao'],
+        transactions: connection,
+      });
+      return cartao;
+    } catch (error) {
+      throw error;
+    }
+  }
+
 }
 

@@ -9,8 +9,6 @@ class CategoriasController {
       const { id_usuario } = req.params;
       const categoria = req.body.categoria;
       
-      console.log("Categoria recebida: ", categoria);
-      
       const result = await this.TransactionUtil.executeTransaction(
         async (connection) => {
           return await this.CategoriasService.createCategoria(
@@ -20,13 +18,6 @@ class CategoriasController {
           );
         }
       );
-
-      if (result.code === "FALHA_CRIACAO_CATEGORIA") {
-        return res.status(400).json({
-          message: result.mensagem,
-          code: result.code,
-        });
-      }
       res.status(201).json(result);
     } catch (error) {
       console.error("Erro ao criar categoria:", error.message);
@@ -37,7 +28,6 @@ class CategoriasController {
   async updateCategoria(req, res, next) {
     const { id_categoria } = req.query;
     const categoria = req.body.categoria;
-  
     try {
       const result = await this.TransactionUtil.executeTransaction(
         async (connection) => {
@@ -55,7 +45,7 @@ class CategoriasController {
   }
 
   async deleteCategoria(req, res, next) {
-    const { id_categoria } = req.query; // Atenção: Verifique se sua rota é query param ou path param
+    const { id_categoria } = req.query;
     const dataAtual = new Date();
     
     try {
