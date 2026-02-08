@@ -53,16 +53,6 @@ export default async ({ database }) => {
   const { default: GastosFixosService } = await import("../modules/gastos_fixos/GastosFixosService.js");
   const { default: FinanciamentosService } = await import("../modules/financiamento/FinanciamentosService.js");
 
-  DependencyInjector.register("GastoMesService", new GastoMesService(
-    DependencyInjector.get("GastoMesRepository"),
-    DependencyInjector.get("BarramentoEventos")
-  ));
-  DependencyInjector.register("GastosFixosService", new GastosFixosService(DependencyInjector.get("GastosFixosRepository")));
-  DependencyInjector.register("FinanciamentosService", new FinanciamentosService(
-    DependencyInjector.get("FinanciamentosRepository"),
-    DependencyInjector.get("BarramentoEventos")
-  ));
-
   // -- Cartões Service
   const { CartoesService } = await import("../modules/cartoes/CartoesService.js");
   DependencyInjector.register("CartoesService", new CartoesService({
@@ -71,6 +61,20 @@ export default async ({ database }) => {
     lancamentosRepositorio: DependencyInjector.get("CartaoLancamentosRepositorioORM"),
     barramentoEventos: DependencyInjector.get("BarramentoEventos"),
   }));
+
+  // -- Gastos Mes Service
+  DependencyInjector.register("GastoMesService", new GastoMesService(
+    DependencyInjector.get("GastoMesRepository"),
+    DependencyInjector.get("BarramentoEventos"),
+    DependencyInjector.get("CartoesService")
+  ));
+
+  // -- Gastos Fixos Service
+  DependencyInjector.register("GastosFixosService", new GastosFixosService(DependencyInjector.get("GastosFixosRepository")));
+  DependencyInjector.register("FinanciamentosService", new FinanciamentosService(
+    DependencyInjector.get("FinanciamentosRepository"),
+    DependencyInjector.get("BarramentoEventos")
+  ));
 
   // -- Alertas Service
   const { default: AlertasService } = await import("../modules/alertas/AlertasService.js");

@@ -6,9 +6,10 @@ import RequisicaoIncorreta from "../../errors/RequisicaoIncorreta.js";
 import { formatarDataParaBanco } from "../../utils/formatarDataParaBanco.js";
 
 export default class GastoMesService {
-  constructor(GastoMesRepository, BarramentoEventos) {
+  constructor(GastoMesRepository, BarramentoEventos, CartoesService) {
     this.GastoMesRepository = GastoMesRepository;
     this.BarramentoEventos = BarramentoEventos;
+    this.CartoesService = CartoesService;
   }
 
   async configGastoLimiteMes(id_usuario, dadosMes, connection) {
@@ -55,13 +56,27 @@ export default class GastoMesService {
   }
 
   async addGasto(gastos, id_usuario, connection) {
+    console.log("Gastos recebidos no service:", gastos);
     try {
+      let cartao = null;
       // 1. Validação prévia
-      if (gastos.forma_pagamento === "CREDITO" && !gastos.uuidCartao) {
-        throw new RequisicaoIncorreta(
-          "Para lançamentos no Crédito, é obrigatório selecionar um Cartão."
-        );
+      if (gastos.forma_pagamento === "CREDITO") {
+        console.log("Entrou na validação prévia")
+        if (!gastos.uuidCartao) {
+          throw new RequisicaoIncorreta("Para lançamentos no crédito, é obrigatório selecionar um cartão.");
+        }
+        cartao = await this.CartoesService.buscarPorUuid(
+          gastos.uuidCartao,
+          connection
+        )
+        console.log("Cartao: ", cartao);
+  
+        if (!cartao) {
+          throw new RequisicaoIncorreta("Cartão não encontrado, ou inválido.");
+        }
+        gastos.id_cartao = cartao.id_cartao;
       }
+
 
       // 2. Prepara e Salva o Gasto no Banco de Dados (Tabela 'gastos')
       // Isso é necessário independente da forma de pagamento para gerar o ID e histórico

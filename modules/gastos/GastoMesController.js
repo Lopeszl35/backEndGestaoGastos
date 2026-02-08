@@ -63,7 +63,6 @@ export default class GastoMesController {
 
   async addGasto(req, res, next) {
     const gasto = req.body.gastos; 
-    console.log("Gastos recebidos na controller:", gasto);
     const id_usuario = Number(req.query.id_usuario);
     try {
       const result = await this.TransactionUtil.executeTransaction(
