@@ -4,7 +4,6 @@ import {
 } from "./registrarListenersDeGastos.js";
 import RequisicaoIncorreta from "../../errors/RequisicaoIncorreta.js";
 import { formatarDataParaBanco } from "../../utils/formatarDataParaBanco.js";
-import { CartoesService } from "../cartoes/CartoesService.js";
 
 export default class GastoMesService {
   constructor(GastoMesRepository, BarramentoEventos) {
@@ -67,12 +66,6 @@ export default class GastoMesService {
       // 2. Prepara e Salva o Gasto no Banco de Dados (Tabela 'gastos')
       // Isso é necessário independente da forma de pagamento para gerar o ID e histórico
       gastos.data_gasto = formatarDataParaBanco(gastos.data_gasto);
-      if (gastos.forma_pagamento === "CREDITO") {
-        gastos.id_cartao = await CartoesService.buscarPorUuid(
-          gastos.uuidCartao,
-          connection
-        );
-      }
       const result = await this.GastoMesRepository.addGasto(
         gastos,
         id_usuario,
