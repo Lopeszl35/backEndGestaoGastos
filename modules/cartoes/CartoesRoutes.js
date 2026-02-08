@@ -50,6 +50,7 @@ router.get(
   (req, res, next) => cartoesController.obterTodosCartoes(req, res, next)
 );
 
+// rota para deletar cartao
 router.delete(
   "/cartoes/:id_usuario/:cartao_uuid", 
   (req, res, next) => cartoesController.deletarCartao(req, res, next)
