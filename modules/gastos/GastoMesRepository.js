@@ -2,6 +2,7 @@ import { GastosModel, TotalGastosMesModel, CategoriasModel, UsuarioModel } from 
 import { sequelize } from "../../database/sequelize.js";
 import { Op, QueryTypes } from "sequelize";
 import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
+import { CartaoCreditoModel } from "../../database/models/index.js";
 
 export default class GastoMesRepository {
   constructor() {}
@@ -14,13 +15,10 @@ export default class GastoMesRepository {
 
       // Usando UPSERT do Sequelize (compatível com MySQL 'ON DUPLICATE KEY UPDATE')
       await TotalGastosMesModel.upsert({
-        idUsuario: id_usuario,
+        id_usuario: id_usuario,
         ano: Number(ano),
         mes: Number(mes),
         limiteGastoMes: Number(limiteGastoMes),
-        // Se for insert, gastoAtualMes começa com 0 (default do model), ou podemos forçar
-        // Se for update, ele mantém o valor atual a menos que especifiquemos. 
-        // O Sequelize upsert atualiza os campos passados.
       }, { transaction: connection });
 
       return {
@@ -53,13 +51,12 @@ export default class GastoMesRepository {
     }
   }
 
-  // 3. Atualizar Limite (Função que faltava)
   async atualizarLimite(id_usuario, limite_gasto_mes, connection) {
     try {
       const [affectedRows] = await TotalGastosMesModel.update(
         { limiteGastoMes: limite_gasto_mes },
         { 
-          where: { idUsuario: id_usuario },
+          where: { id_usuario: id_usuario },
           transaction: connection
         }
       );
@@ -76,7 +73,7 @@ export default class GastoMesRepository {
       // Passo 1: Calcular soma na tabela de gastos
       const soma = await GastosModel.sum('valor', {
         where: {
-          idUsuario: id_usuario,
+          id_usuario: id_usuario,
           [Op.and]: [
             sequelize.where(sequelize.fn('YEAR', sequelize.col('data_gasto')), ano),
             sequelize.where(sequelize.fn('MONTH', sequelize.col('data_gasto')), mes)
@@ -159,7 +156,7 @@ export default class GastoMesRepository {
 
   // 6. Adicionar Gasto
   async addGasto(gastos, id_usuario, connection) {
-    console.log("Gastos recebidos na service:", gastos);
+    console.log("Gastos recebidos no repository:", gastos);
     try {
       const novoGasto = await GastosModel.create({
         id_categoria: gastos.id_categoria,
@@ -167,7 +164,7 @@ export default class GastoMesRepository {
         valor: gastos.valor,
         data_gasto: gastos.data_gasto,
         descricao: gastos.descricao || null,
-        forma_pagamento: gastos.forma_pagamento || null,
+        forma_pagamento: gastos.forma_pagamento || 'DEBITO',
         origem_lancamento: gastos.origem_lancamento || "manual",
         id_cartao: gastos.id_cartao || null
       }, { transaction: connection });
@@ -182,7 +179,6 @@ export default class GastoMesRepository {
     }
   }
 
-  // 7. Obter Saldo Atual (Função que faltava)
   async getSaldoAtual(id_usuario, connection) {
     try {
       // Usa UsuarioModel para buscar saldo

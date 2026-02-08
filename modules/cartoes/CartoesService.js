@@ -484,4 +484,13 @@ export class CartoesService {
     }
   }
 
+  async buscarPorUuid(uuidCartao, connection) {
+    try {
+      if (!uuidCartao || uuidCartao === "" || uuidCartao === undefined) throw new RequisicaoIncorreta("Uuid do cartão obrigatorio.");
+      return await this.cartoesRepositorio.buscarCartaoPorUuid(uuidCartao, connection);
+    } catch (error) {
+      throw error;
+    }
+  }
+
 }
