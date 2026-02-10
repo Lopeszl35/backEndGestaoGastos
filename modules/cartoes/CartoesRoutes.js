@@ -27,7 +27,7 @@ export default function CartoesRoutes(cartoesController) {
 );
 
 // rota para ativar ou desativar cartão
-router.patch(
+router.put(
   "/cartoes/:id_usuario/:cartao_uuid/ativar", ativarDesativarCartaoValidate,
   (req, res, next) => cartoesController.ativarDesativarCartao(req, res, next)
 );
