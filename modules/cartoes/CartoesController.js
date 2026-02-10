@@ -68,24 +68,24 @@ export class CartoesController {
     } catch (erro) {
         return next(erro);
     }
-    }
+  }
 
-    async ativarDesativarCartao(req, res, next) {
-      try {
-          const idUsuario = Number(req.params.id_usuario);
-          const uuidCartao = String(req.params.cartao_uuid);
-          const ativar = req.query.ativar;
+  async ativarDesativarCartao(req, res, next) {
+    try {
+      const idUsuario = Number(req.params.id_usuario);
+      const uuidCartao = String(req.params.cartao_uuid);
+      const ativar = req.query.ativar;
     
-          const resultado = await this.cartoesService.ativarDesativarCartao({
-              idUsuario,
-              uuidCartao,
-              ativar,
-          });
+      const resultado = await this.cartoesService.ativarDesativarCartao({
+        idUsuario,
+        uuidCartao,
+        ativar,
+      });
     
-          return res.status(200).json(resultado);
-      } catch (erro) {
-          return next(erro);
-      }
+      return res.status(200).json(resultado);
+    } catch (erro) {
+      return next(erro);
+    }
   }
 
   async editarCartao(req, res, next) {
