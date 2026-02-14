@@ -28,6 +28,14 @@ export default class FinanciamentosRepository {
     try {
       return await FinanciamentoModel.findAll({
         where: { idUsuario, ativo: true },
+        include: {
+          model: FinanciamentoParcelaModel,
+          as: "parcelas",
+          where: { status: "aberta" },
+          required: false,
+          limit: 1,
+          order: [['dataVencimento', 'ASC']]
+        },
         order: [['createdAt', 'DESC']]
       });
     } catch (error) {

@@ -9,6 +9,8 @@ import { TotalGastosMesModel } from "./gastos/TotalGastosMesModel.js";
 import { GastosFixosModel } from "./gastosFixos/GastosFixosModel.js";
 import { FinanciamentoModel } from "./financiamentos/FinanciamentoModel.js";
 import { FinanciamentoParcelaModel } from "./financiamentos/FinanciamentoParcelaModel.js";
+import { InvestimentoModel } from "./investimentos/InvestimentoModel.js";
+import { ReceitaModel } from "./receitas/ReceitaModel.js";
 
 export function configurarRelacionamentosModelos() {
   // --- Cartões ---
@@ -130,6 +132,22 @@ export function configurarRelacionamentosModelos() {
     as: "financiamentoOrigem" 
   });
 
+  InvestimentoModel.belongsTo(UsuarioModel, { 
+    foreignKey: "id_usuario", as: "usuario" 
+    });
+  UsuarioModel.hasMany(InvestimentoModel, { 
+    foreignKey: "id_usuario", as: "investimentos" 
+  });
+
+  ReceitaModel.belongsTo(UsuarioModel, {
+    foreignKey: "id_usuario",
+    as: "usuario"
+  });
+
+  UsuarioModel.hasMany(ReceitaModel, {
+    foreignKey: "id_usuario",
+    as: "receitas"
+  });
 }
 
 export {
@@ -143,5 +161,6 @@ export {
   TotalGastosMesModel,
   GastosFixosModel,
   FinanciamentoModel,
-  FinanciamentoParcelaModel
+  FinanciamentoParcelaModel,
+  InvestimentoModel,
 };
