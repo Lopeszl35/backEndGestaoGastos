@@ -27,7 +27,7 @@ export default ({ app }) => {
       saveUninitialized: false,
       cookie: {
         maxAge: 1000 * 60 * 60 * 24, // 1 dia
-        secure: false, // Mude para true em prod
+        secure: true, // Mude para true em prod
         httpOnly: true,
         sameSite: "lax",
       },

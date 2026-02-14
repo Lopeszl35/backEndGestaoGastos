@@ -29,12 +29,9 @@ export default (userController) => {
     userController.atualizarUserSaldo(req, res, next);
   });
 
-  router.put(
-    "/atualizarUsuario/:userId",
-    validateUpdateUser,
-    (req, res, next) => {
-      userController.atualizarUsuario(req, res, next);
-    }
+  router.put("/atualizarUsuario/:userId", validateUpdateUser, (req, res, next) => {
+    userController.atualizarUsuario(req, res, next);
+  }
   );
 
   router.get("/userData/:userId", (req, res, next) => {

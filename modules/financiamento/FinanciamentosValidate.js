@@ -1,4 +1,6 @@
 import { body, param, query } from "express-validator";
+import ErroValidacao from "../../errors/ValidationError.js";
+import { validationResult } from "express-validator";
 
 function handleValidation(req, _res, next) {
   const errors = validationResult(req);

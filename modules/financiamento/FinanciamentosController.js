@@ -60,6 +60,7 @@ export default class FinanciamentosController {
     try {
       const idUsuario = Number(req.query.id_usuario);
       const lista = await this.FinanciamentosService.listarAtivos(idUsuario);
+      console.log("lista: ", lista);
       res.status(200).json(lista);
     } catch (error) {
       next(error);

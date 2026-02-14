@@ -188,9 +188,52 @@ export default class FinanciamentosService {
     }
   }
 
+  // modules/financiamento/FinanciamentosService.js
+
   async listarAtivos(idUsuario) {
     try {
-      return await this.repo.buscarAtivos(idUsuario);
+      const financiamentos = await this.repo.buscarAtivos(idUsuario);
+
+      // Variáveis acumuladoras
+      let dividaTotal = 0;
+      let parcelaTotalMensal = 0;
+      let somaTaxas = 0;
+      let qtdFinanciamentos = financiamentos.length;
+
+      // Mapeia para formatar os dados e fazer os cálculos
+      const itens = financiamentos.map(f => {
+        const json = f.toJSON();
+        
+        // Tenta pegar o valor da próxima parcela do include, ou 0 se não houver
+        const proximaParcela = (f.parcelas && f.parcelas.length > 0) ? f.parcelas[0] : null;
+        const valorParcelaAtual = proximaParcela ? Number(proximaParcela.valor) : 0;
+
+        // Acumula os valores
+        dividaTotal += Number(f.valorRestante);
+        parcelaTotalMensal += valorParcelaAtual;
+        somaTaxas += Number(f.taxaJurosMensal || 0);
+
+        // Adiciona campos extras úteis no objeto de retorno individual
+        return {
+          ...json,
+          valorParcelaAtual: valorParcelaAtual, // Útil para o front mostrar quanto é a parcela deste mês
+          proximoVencimento: proximaParcela ? proximaParcela.dataVencimento : null
+        };
+      });
+
+      // Calcula média (evita divisão por zero)
+      const taxaMedia = qtdFinanciamentos > 0 ? (somaTaxas / qtdFinanciamentos) : 0;
+
+      // Retorna objeto estruturado com o Resumo + Lista
+      return {
+        resumo: {
+          dividaTotal: Number(dividaTotal.toFixed(2)),
+          parcelaTotal: Number(parcelaTotalMensal.toFixed(2)), // Soma de todas as parcelas que o usuário paga no mês
+          taxaMedia: Number(taxaMedia.toFixed(4)) // Média simples das taxas
+        },
+        financiamentos: itens
+      };
+
     } catch (error) {
       console.error("Erro Service listarAtivos:", error.message);
       throw error;

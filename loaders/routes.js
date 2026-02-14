@@ -14,6 +14,8 @@ export default async ({ app }) => {
   const { default: CartoesRoutes } = await import("../modules/cartoes/CartoesRoutes.js");
   const { default: FinanciamentosRoutes } = await import("../modules/financiamento/FinanciamentosRoutes.js");
   const { default: DashboradRoutes } = await import("../modules/dashboard/DashboardRoutes.js");
+  const { default: MercadoRoutes } = await import("../modules/mercado/MercadoRoutes.js");
+  const { default: InvestimentosRoutes } = await import("../modules/investimentos/InvestimentosRoutes.js");
 
   // Rotas Específicas PRIMEIRO (Boas práticas do Express)
   app.use(routerTest);
@@ -24,6 +26,8 @@ export default async ({ app }) => {
   app.use("/api/financiamentos", FinanciamentosRoutes(DependencyInjector.get("FinanciamentosController")));
   app.use("/api/dashboard", DashboradRoutes(DependencyInjector.get("DashboardController")));
   app.use("/api", CartoesRoutes(DependencyInjector.get("CartoesController")));
+  app.use("/api/mercado", MercadoRoutes(DependencyInjector.get("MercadoController")));
+  app.use("/api/investimentos", InvestimentosRoutes(DependencyInjector.get("InvestimentosController")));
 
   // Middlewares Finais
   app.use(manipulador404);

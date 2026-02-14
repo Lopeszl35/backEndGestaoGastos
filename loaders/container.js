@@ -38,6 +38,10 @@ export default async ({ database }) => {
   const { default: AlertasRepository } = await import("../modules/alertas/AlertasRepository.js");
   DependencyInjector.register("AlertasRepository", new AlertasRepository(database));
 
+  // -- Repositório Investimento 
+  const { default: InvestimentosRepository } = await import("../modules/investimentos/InvestimentosRepository.js");
+  DependencyInjector.register("InvestimentosRepository", new InvestimentosRepository(database));
+
   // 3. Services
   // -- Core Services
   const { default: UserService } = await import("../modules/usuario/UserService.js");
@@ -82,6 +86,14 @@ export default async ({ database }) => {
     DependencyInjector.get("AlertasRepository"),
     DependencyInjector.get("NotificacoesService")
   ));
+
+  // -- Mercado Service
+  const { default: MercadoService } = await import("../modules/mercado/MercadoService.js");
+  DependencyInjector.register("MercadoService", new MercadoService());
+
+  // -- Investimento Service
+  const {default: InvestimentoService} = await import("../modules/investimentos/InvestimentoService.js");
+  DependencyInjector.register("InvestimentoService", new InvestimentoService());
 
   // 4. Controllers
   const { default: UserController } = await import("../modules/usuario/userController.js");
