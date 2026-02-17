@@ -1,3 +1,4 @@
+import { Transaction } from "sequelize";
 import { EVENTO_PAGAMENTO_FINANCIAMENTO } from "./FinanciamentosService.js";
 
 export default function registrarListenersDeFinanciamentos({
@@ -6,11 +7,12 @@ export default function registrarListenersDeFinanciamentos({
   userRepository,
 }) {
   if (!barramentoEventos) throw new Error("barramentoEventos é obrigatório");
+  if (!gastoMesService) throw new Error("gastoMesService é obrigatório");
+  if (!userRepository) throw new Error("userRepository é obrigatório");
 
   barramentoEventos.registrarListener(
-    EVENTO_PAGAMENTO_FINANCIAMENTO,
+    EVENTO_PAGAMENTO_FINANCIAMENTO, transaction,
     async (payload) => {
-      try {
         const { 
           id_usuario, 
           valor, 
@@ -47,9 +49,6 @@ export default function registrarListenersDeFinanciamentos({
             id_financiamento: id_financiamento
           }, id_usuario, connection);
         }
-      } catch (error) {
-        console.error(`[ERRO CRÍTICO] Falha no listener de Financiamentos para usuario ${payload?.id_usuario}:`, error);
-      }
     }
   );
 }

@@ -20,7 +20,7 @@ GastosModel.init(
         },
         id_categoria: {
             type: DataTypes.INTEGER,
-            allowNull: false,
+            allowNull: true,
             references: {
                 model: "categorias_gastos", // Nome da tabela no banco
                 key: "id_categoria",
