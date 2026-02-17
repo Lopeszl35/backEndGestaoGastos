@@ -52,7 +52,7 @@ export default function registrarListenersDeGastos({
     }
   );
 
-  // 3) Diminuir saldo atual do usuário (agora chamando o método novo do service/repo refatorado)
+  // 3) Diminuir saldo atual do usuário 
   barramentoEventos.registrarListener(
     EVENTO_GASTO_INSERIDO,
     async (payload) => {

@@ -17,6 +17,19 @@ export default class FinanciamentosController {
     }
   }
 
+  async deletar(req, res, next) {
+    try {
+      const idFinanciamento = Number(req.params.id_financiamento);
+      const idUsuario = Number(req.query.id_usuario);
+      const result = await this.TransactionUtil.executeTransaction(async (t) => {
+        return await this.FinanciamentosService.deletarFinanciamento(idFinanciamento, idUsuario, t);
+      });
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async pagarParcela(req, res, next) {
     try {
       const idUsuario = Number(req.query.id_usuario);

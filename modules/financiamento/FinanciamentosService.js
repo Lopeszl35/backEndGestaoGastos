@@ -53,6 +53,15 @@ export default class FinanciamentosService {
     }
   }
 
+  async deletarFinanciamento(idFinanciamento, idUsuario, transaction) {
+    try {
+      return await this.repo.deletarFinanciamento(idFinanciamento, idUsuario, transaction);
+    } catch (error) {
+      console.error("Erro Service deletarFinanciamento:", error.message);
+      throw error;
+    }
+  }
+
   // NOTA: id_categoria removido dos parâmetros
   async pagarParcela(idUsuario, idParcela, transaction) {
     try {
@@ -188,7 +197,6 @@ export default class FinanciamentosService {
     }
   }
 
-  // modules/financiamento/FinanciamentosService.js
 
   async listarAtivos(idUsuario) {
     try {

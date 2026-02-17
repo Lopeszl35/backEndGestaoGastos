@@ -24,6 +24,19 @@ export default class FinanciamentosRepository {
     }
   }
 
+  async deletarFinanciamento(idFinanciamento, idUsuario, transaction) {
+    try {
+      return await FinanciamentoModel.destroy({
+        where: { idFinanciamento, idUsuario },
+        transaction
+      });
+    } catch (error) {
+      console.error("Erro em FinanciamentosRepository.deletarFinanciamento:", error.message);
+      ErroSqlHandler.tratarErroSql(error);
+      throw error;
+    }
+  }
+
   async buscarAtivos(idUsuario) {
     try {
       return await FinanciamentoModel.findAll({

@@ -4,7 +4,8 @@ import {
     validarPagamentoParcela, 
     validarAmortizacao,
     validarSimulacao,
-    validarListagem
+    validarListagem,
+    validarDeletarFinanciamento,
 } from "./FinanciamentosValidate.js";
 
 export default function FinanciamentosRoutes(controller) {
@@ -18,7 +19,15 @@ export default function FinanciamentosRoutes(controller) {
     (req, res, next) => controller.criar(req, res, next)
   );
 
-  // 2. Listar Financiamentos Ativos
+  // 2. Deletar Financiamento
+  // DELETE /api/financiamentos/deletarFinanciamento/:id_financiamento
+  router.delete(
+    "/deletarFinanciamento/:id_financiamento",  
+    validarDeletarFinanciamento,
+    (req, res, next) => controller.deletar(req, res, next)
+  );
+
+  // 3. Listar Financiamentos Ativos
   // GET /api/financiamentos?id_usuario=1
   router.get(
     "/financiamentosAtivos", 
@@ -26,7 +35,7 @@ export default function FinanciamentosRoutes(controller) {
     (req, res, next) => controller.listarAtivos(req, res, next)
   );
 
-  // 3. Pagar uma Parcela específica
+  // 4. Pagar uma Parcela específica
   // POST /api/financiamentos/parcelas/:id_parcela/pagar?id_usuario=1
   router.post(
     "/parcelas/:id_parcela/pagar", 
@@ -34,7 +43,7 @@ export default function FinanciamentosRoutes(controller) {
     (req, res, next) => controller.pagarParcela(req, res, next)
   );
 
-  // 4. Amortizar Saldo Devedor
+  // 5. Amortizar Saldo Devedor
   // POST /api/financiamentos/:id_financiamento/amortizar?id_usuario=1
   router.post(
     "/:id_financiamento/amortizar", 
@@ -42,7 +51,7 @@ export default function FinanciamentosRoutes(controller) {
     (req, res, next) => controller.amortizar(req, res, next)
   );
 
-  // 5. Simular Financiamento (Sem persistir)
+  // 6. Simular Financiamento (Sem persistir)
   // POST /api/financiamentos/simular
   router.post(
     "/simular", 

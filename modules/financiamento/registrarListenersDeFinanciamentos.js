@@ -49,7 +49,6 @@ export default function registrarListenersDeFinanciamentos({
         }
       } catch (error) {
         console.error(`[ERRO CRÍTICO] Falha no listener de Financiamentos para usuario ${payload?.id_usuario}:`, error);
-        // Em um sistema real, aqui você enviaria para uma fila de Dead Letter Queue (DLQ)
       }
     }
   );

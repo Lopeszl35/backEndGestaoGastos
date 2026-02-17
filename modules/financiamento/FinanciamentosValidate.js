@@ -51,6 +51,14 @@ export const validarCriacaoFinanciamento = [
   handleValidation
 ];
 
+export const validarDeletarFinanciamento = [
+  query("id_financiamento")
+    .notEmpty().withMessage("ID do financiamento é obrigatório.")
+    .isInt().withMessage("ID do financiamento deve ser um número inteiro."),
+  
+  handleValidation
+]
+
 /**
  * Validação para Pagamento de Parcela
  * NOTA: Não validamos id_categoria pois foi removido da regra de negócio.
