@@ -134,23 +134,43 @@ export default class FinanciamentosService {
       const contrato = await this.repo.buscarPorId(idFinanciamento, idUsuario, transaction);
       if (!contrato || !contrato.ativo) throw new RequisicaoIncorreta("Financiamento não encontrado ou inativo.");
 
+      // --- CORREÇÃO: Registrar a Amortização no Histórico de Parcelas ---
+      // Criamos um registro com status 'paga' para aparecer no extrato do financiamento
+      const parcelaAmortizacao = {
+        idFinanciamento: contrato.idFinanciamento,
+        idUsuario: idUsuario,
+        numeroParcela: 0, // 0 indica que é uma amortização/extra
+        ano: new Date().getFullYear(),
+        mes: new Date().getMonth() + 1,
+        dataVencimento: new Date(),
+        dataPagamento: new Date(),
+        valor: valorAmortizacao,
+        valorAmortizacao: valorAmortizacao, // 100% amortização
+        valorJuros: 0,
+        status: 'paga' // <--- AQUI: Já nasce PAGA
+      };
+      
+      // Usa o método existente de inserir (ele aceita array)
+      await this.repo.inserirParcelas([parcelaAmortizacao], transaction);
+      // ------------------------------------------------------------------
+
       const saldoAtual = Number(contrato.valorRestante);
       let novoSaldo = saldoAtual - valorAmortizacao;
       if (novoSaldo < 0) novoSaldo = 0;
 
-      // Remove parcelas futuras
+      // Remove parcelas futuras (abertas) para recalcular
       const parcelasPagas = contrato.parcelasPagas;
       const proximaParcelaNum = parcelasPagas + 1;
       await this.repo.removerParcelasFuturas(idFinanciamento, proximaParcelaNum, transaction);
 
       if (novoSaldo > 0) {
-        // Recalcula novas parcelas
+        // Recalcula novas parcelas para o saldo restante
         const parcelasRestantes = contrato.numeroParcelas - parcelasPagas;
         const novasParcelas = CalculadoraFinanceira.calcularProjecaoPrice({
           valorPrincipal: novoSaldo,
           taxaJurosMensal: Number(contrato.taxaJurosMensal),
           numeroParcelas: parcelasRestantes,
-          dataInicio: new Date(),
+          dataInicio: new Date(), // Re-projeta datas a partir de hoje
           diaVencimento: contrato.diaVencimento,
           parcelaInicial: proximaParcelaNum
         });
@@ -175,7 +195,7 @@ export default class FinanciamentosService {
         ativo: novoSaldo > 0
       }, transaction);
 
-      // Evento de Amortização (Categoria NULL)
+      // Evento de Amortização (Para gerar o Gasto no Extrato Geral)
       if (this.bus) {
         await this.bus.emitir(EVENTO_PAGAMENTO_FINANCIAMENTO, {
           id_usuario: idUsuario,

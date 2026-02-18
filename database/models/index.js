@@ -163,4 +163,5 @@ export {
   FinanciamentoModel,
   FinanciamentoParcelaModel,
   InvestimentoModel,
+  ReceitaModel,
 };

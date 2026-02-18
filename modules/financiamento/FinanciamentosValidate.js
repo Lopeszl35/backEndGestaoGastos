@@ -52,7 +52,7 @@ export const validarCriacaoFinanciamento = [
 ];
 
 export const validarDeletarFinanciamento = [
-  query("id_financiamento")
+  param("id_financiamento")
     .notEmpty().withMessage("ID do financiamento é obrigatório.")
     .isInt().withMessage("ID do financiamento deve ser um número inteiro."),
   

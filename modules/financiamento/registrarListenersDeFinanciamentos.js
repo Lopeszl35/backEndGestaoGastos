@@ -11,7 +11,7 @@ export default function registrarListenersDeFinanciamentos({
   if (!userRepository) throw new Error("userRepository é obrigatório");
 
   barramentoEventos.registrarListener(
-    EVENTO_PAGAMENTO_FINANCIAMENTO, transaction,
+    EVENTO_PAGAMENTO_FINANCIAMENTO,
     async (payload) => {
         const { 
           id_usuario, 
