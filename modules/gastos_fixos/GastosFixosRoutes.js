@@ -30,8 +30,9 @@ export default (gastosFixosController) => {
   );
 
 // rota para atualizar o status do gasto fixo
- router.patch(
+ router.put(
     "/gastosFixos/:id_gasto_fixo/ativo",
+    validateToggleGastoFixoAtivo,
     (req, res, next) => gastosFixosController.toggleAtivo(req, res, next)
   );
 

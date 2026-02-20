@@ -31,7 +31,7 @@ export const validateAddGastoFixo = [
   body("gastoFixo.tipo")
     .exists({ checkFalsy: true }).withMessage("tipo é obrigatório.")
     .bail()
-    .isIn(["luz", "agua", "internet", "assinatura", "telefone", "outro"])
+    .isIn(["Luz/Energia", "Água", "Internet", "Assinatura", "Telefone", "outros", "Aluguel", "Condomínio", "Financiamento", "Empréstimo", "Cartão de Crédito"])
     .withMessage("tipo inválido."),
 
   body("gastoFixo.titulo")
@@ -95,9 +95,9 @@ export const validateToggleGastoFixoAtivo = [
     .isInt({ gt: 0 }).withMessage("id_usuario deve ser um número inteiro positivo."),
 
   body("ativo")
-    .exists({ checkFalsy: true }).withMessage("ativo é obrigatório.")
+    .exists().withMessage("ativo é obrigatório.")
     .bail()
-    .isInt({ min: 0, max: 1 }).withMessage("ativo deve ser 0 ou 1."),
+    .isBoolean().withMessage("ativo deve ser booleano."),
 
   handleValidation,
 ];

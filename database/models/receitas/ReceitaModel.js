@@ -28,7 +28,59 @@ ReceitaModel.init(
             type: DataTypes.DATEONLY,
             allowNull: false,
             field: "data_receita",
+            comment: "Data em que o dinheiro efetivamente caiu (ou cairá) na conta"
         },
+        
+        // --- NOVOS CAMPOS ESTRATÉGICOS PARA IA ---
+        
+        tipo: {
+            type: DataTypes.ENUM(
+                'SALARIO', 
+                'FREELANCE', 
+                'RENDIMENTO_INVESTIMENTO', 
+                'CASHBACK', 
+                'VENDA_ATIVO', 
+                'DOACAO', 
+                'OUTRO'
+            ),
+            allowNull: false,
+            defaultValue: 'OUTRO',
+            field: "tipo",
+        },
+        status: {
+            type: DataTypes.ENUM('PREVISTA', 'EFETIVADA', 'CANCELADA'),
+            allowNull: false,
+            defaultValue: 'EFETIVADA',
+            field: "status",
+            comment: "Crucial para projeção de fluxo de caixa futuro"
+        },
+        isFixa: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            field: "is_fixa",
+            comment: "True para salários/aluguéis. False para bicos/vendas."
+        },
+        instituicaoOrigem: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+            field: "instituicao_origem",
+            comment: "Nome do empregador, corretora, ou cliente"
+        },
+        idInvestimento: {
+            type: DataTypes.INTEGER,
+            allowNull: true, // Nullable pois nem toda receita vem de investimento
+            field: "id_investimento",
+            references: {
+                model: "investimentos", 
+                key: "id_investimento",
+            },
+            onDelete: "SET NULL", // Se deletar o investimento, mantém a receita como histórico
+            onUpdate: "CASCADE"
+        },
+        
+        // ----------------------------------------
+
         descricao: {
             type: DataTypes.STRING(255),
             allowNull: true,
@@ -62,5 +114,16 @@ ReceitaModel.init(
         timestamps: true,
         createdAt: "criadoEm",
         updatedAt: "atualizadoEm",
+        indexes: [
+            // Índices para otimizar queries da IA (Complexidade O(log n))
+            {
+                name: "idx_receitas_usuario_data",
+                fields: ["id_usuario", "data_receita"]
+            },
+            {
+                name: "idx_receitas_status",
+                fields: ["id_usuario", "status"]
+            }
+        ]
     }
 );
