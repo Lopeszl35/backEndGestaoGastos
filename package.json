@@ -1,8 +1,9 @@
 {
-  "name": "backend",
+  "name": "konta-backend",
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",
+  "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
@@ -11,10 +12,15 @@
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:migrate:undo:all": "sequelize-cli db:migrate:undo:all"
   },
-  "keywords": [],
+  "keywords": [
+    "finance",
+    "investments",
+    "nexor",
+    "api"
+  ],
   "author": "Rafael Lopes",
-  "license": "ISC",
-  "description": "API gestaoGastosInvestimentos",
+  "license": "UNLICENSED",
+  "description": "Backend API para o aplicativo Konta - Gestão Financeira Inteligente (Desenvolvido por Nexor). O Konta é um aplicativo de gestão financeira pessoal que ajuda os usuários a controlar seus gastos, receitas e investimentos de forma inteligente. Com uma interface intuitiva e recursos avançados, o Konta permite que os usuários tenham uma visão clara de suas finanças, estabeleçam metas financeiras e tomem decisões informadas para alcançar a estabilidade financeira. O backend do Konta é construído com Node.js e Express, utilizando uma arquitetura modular para garantir escalabilidade e manutenção eficiente. Ele oferece endpoints RESTful para gerenciar usuários, gastos, receitas e investimentos, além de implementar autenticação segura e validação de dados para garantir a integridade das informações. O Konta é projetado para ser uma solução completa de gestão financeira pessoal, ajudando os usuários a alcançar seus objetivos financeiros de maneira inteligente e eficaz.",
   "dependencies": {
     "axios": "^1.13.5",
     "bcrypt": "^5.1.1",
