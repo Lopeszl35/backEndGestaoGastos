@@ -29,7 +29,6 @@ export const validateCreateUser = [
     .trim()
     .exists({ checkFalsy: true })
     .withMessage("A senha é obrigatória.")
-    .isLength({ min: 6 })
     .withMessage("A senha deve ter pelo menos 6 caracteres.")
     .isStrongPassword()
     .withMessage(
