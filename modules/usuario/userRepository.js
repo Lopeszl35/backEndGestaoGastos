@@ -1,5 +1,6 @@
 import { UsuarioModel } from "../../database/models/index.js";
 import NaoEncontrado from "../../errors/naoEncontrado.js";
+import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
 
 class UserRepository {
 
@@ -12,9 +13,6 @@ class UserRepository {
     return { mensagem: "Saldo atualizado com sucesso." };
   }
 
-  /**
-   * Cria um usuário no banco de dados.
-   */
   async createUser(user, transaction) {
     try {
       // Passando a transação para o create do Sequelize
@@ -26,7 +24,7 @@ class UserRepository {
         result: novoUsuario.toJSON() 
       };
     } catch (error) {
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -38,7 +36,7 @@ class UserRepository {
       });
       return { affectedRows: linhasAfetadas };
     } catch (erro) {
-      throw erro;
+      ErroSqlHandler.tratarErroSql(erro);
     }
   }
 
@@ -54,12 +52,11 @@ class UserRepository {
       return usuario ? { saldo_atual: usuario.saldoAtual } : null;
     } catch (error) {
       console.error("Erro no UserRepository.getUserSaldo:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
   async atualizarUserSaldo(userId, novoSaldo) {
-    console.log("user id para atualizar: ", userId);
     try {
       const [linhasAfetadas] = await UsuarioModel.update(
         { saldoAtual: novoSaldo },
@@ -67,11 +64,8 @@ class UserRepository {
       );
       return { affectedRows: linhasAfetadas };
     } catch (error) {
-      console.error(
-        "Erro no UserRepository.atualizarUserSaldo:",
-        error.message
-      );
-      throw error;
+      console.error("Erro no UserRepository.atualizarUserSaldo:",error.message);
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -84,7 +78,7 @@ class UserRepository {
       return userData ? userData.toJSON() : null;
     } catch (error) {
       console.error("Erro no UserRepository.getUserById:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -96,7 +90,7 @@ class UserRepository {
       return userData ? userData.toJSON() : null;
     } catch (error) {
       console.error("Erro no UserRepository.getUserByEmail:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -112,7 +106,7 @@ class UserRepository {
       return { affectedRows: result };
     } catch (error) {
       console.error("Erro no UserRepository.deleteUser:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 }

@@ -1,4 +1,5 @@
 import NaoEncontrado from "../../errors/naoEncontrado.js";
+import ErroValidacao from "../../errors/ValidationError.js";
 import { generateToken } from "../../auth/token.js";
 import Auth from "../../auth/auth.js";
 import AuthResponseDTO from "./AuthResponseDTO.js";
@@ -13,11 +14,8 @@ class UserService {
 
   async createUser(userDataInput) {
     const transaction = await sequelize.transaction();
-    try {
-
       // Hash da senha antes de salvar
       const senhaHash = await hashPassword(userDataInput.senha_hash);
-      console.log("Senha hash: ", senhaHash);
 
       // Chama a Entity para criar o usuário
       const novoUsuario = new UsuarioEntity({
@@ -43,24 +41,14 @@ class UserService {
           ...novoUsuario.toPublicDTO(), 
           token
       };
-      
-    } catch (error) {
-      throw error;
-    }
   }
 
   async deleteUser(userId) {
-    try {
       const result = await this.UserRepository.deleteUser(userId);
       return result;
-    } catch (error) {
-      throw error;
-    }
   }
 
   async atualizarUsuario(userId, updatesDto) {
-    console.log("updatesDto: ", updatesDto);
-    // whitelist e mapeamento para o Model
     const payload = {};
 
     if (updatesDto.nome !== undefined) payload.nome = updatesDto.nome;
@@ -83,7 +71,6 @@ class UserService {
   }
 
   async loginUser(email, senha) {
-    try {
       // userModel vem do Sequelize (camelCase: idUsuario, senhaHash...)
       const userModel = await this.UserRepository.getUserByEmail(email);
       
@@ -91,9 +78,12 @@ class UserService {
         throw new NaoEncontrado("Usuário não encontrado");
       } 
       
-      await Auth.senhaValida(senha, userModel.senhaHash);
-      
-      // --- CORREÇÃO PRINCIPAL AQUI ---
+      const senhaValida = await Auth.senhaValida(senha, userModel.senhaHash);
+
+      if (!senhaValida) {
+        throw new ErroValidacao("Senha incorreta");
+      }
+
       // 1. Converte Model -> Entity (para aplicar regras/formatação)
       const entity = new UsuarioEntity(userModel);
       
@@ -105,21 +95,16 @@ class UserService {
       
       // 4. Retorna DTO com os dados em snake_case
       return new AuthResponseDTO(userPublicData, token);
-
-    } catch (error) {
-      console.log("Erro ao logar o usuário no service:", error.message);
-      throw error;
-    }
   }
 
   async getUserSaldo(userId) {
-    try {
+      const userExists = await this.getUser(userId); // Verifica se o usuário existe, lança erro se não existir
+      if (!userExists) {
+        throw new NaoEncontrado("Usuário não encontrado");
+      }
       const saldo = await this.UserRepository.getUserSaldo(userId);
+      console.log("Saldo atual do usuário:", saldo);
       return saldo;
-    } catch (error) {
-      console.log("Erro ao obter o saldo do usuário no modelo:", error.message);
-      throw error;
-    }
   }
 
   async atualizarUserSaldo(userId, novoSaldo) {
@@ -139,7 +124,6 @@ class UserService {
   }
 
   async diminuirSaldoAtualAposPagarFaturaCartao({ id_usuario, valor, connection }) {
-    try {
       // 1. Busca com LOCK
       const userModel = await this.UserRepository.getUserById(id_usuario, connection, true);
       if (!userModel) throw new NaoEncontrado("Usuário não encontrado.");
@@ -158,40 +142,12 @@ class UserService {
       );
       
       return { mensagem: "Saldo atualizado com sucesso." };
-    } catch (error) {
-      console.log(
-        "Erro ao diminuir o saldo do usuário no modelo:",
-        error.message
-      );
-      throw error;
-    }
   }
 
   async getUser(userId) {
-    try {
       const userData = await this.UserRepository.getUserById(userId);
       // Mapeamento reverso (Model -> DTO) se necessário
       return userData ? this._mapToDTO(userData) : null;
-    } catch (error) {
-      console.log(
-        "Erro ao obter os dados do usuário no modelo:",
-        error.message
-      );
-      throw error;
-    }
-  }
-
-  async getUserData(userId) {
-    try {
-      const userData = await this.UserRepository.getUserById(userId);
-      return userData ? this._mapToDTO(userData) : null;
-    } catch (error) {
-      console.log(
-        "Erro ao obter os dados do usuário no modelo:",
-        error.message
-      );
-      throw error;
-    }
   }
 
   // Helper privado para manter compatibilidade de retorno snake_case

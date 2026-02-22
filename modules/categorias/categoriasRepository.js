@@ -1,7 +1,7 @@
 import { CategoriasModel } from "../../database/models/index.js";
 import { sequelize } from "../../database/sequelize.js";
 import { QueryTypes, Op } from "sequelize";
-import NaoEncontrado from "../../errors/naoEncontrado.js";
+import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
 
 export default class CategoriasRepository {
   constructor() {}
@@ -31,7 +31,7 @@ export default class CategoriasRepository {
       }
     } catch (error) {
       console.error("Erro no CategoriasRepository.createCategoria:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -53,7 +53,7 @@ export default class CategoriasRepository {
       return count > 0;
     } catch (error) {
       console.error("Erro no CategoriasRepository.checkCategoriaExists:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -89,7 +89,7 @@ export default class CategoriasRepository {
       return result;
     } catch (error) {
       console.error("Erro no CategoriasRepository.getCategoriasAtivas:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -109,7 +109,7 @@ export default class CategoriasRepository {
       return { affectedRows };
     } catch (error) {
       console.error("Erro no CategoriasRepository.updateCategoria:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -129,7 +129,7 @@ export default class CategoriasRepository {
       return { affectedRows };
     } catch (error) {
       console.error("Erro no CategoriasRepository.deleteCategoria:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -146,7 +146,7 @@ export default class CategoriasRepository {
       return categorias;
     } catch (error) {
       console.error("Erro no CategoriasRepository.getCategoriasInativas:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -166,7 +166,7 @@ export default class CategoriasRepository {
       return { affectedRows };
     } catch (error) {
       console.error("Erro no CategoriasRepository.reativarCategoria:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 
@@ -181,7 +181,7 @@ export default class CategoriasRepository {
       return categoria ? categoria.toJSON() : null;
     } catch (error) {
       console.error("Erro no CategoriasRepository.buscarPorId:", error.message);
-      throw error;
+      ErroSqlHandler.tratarErroSql(error);
     }
   }
 }

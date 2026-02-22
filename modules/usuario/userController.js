@@ -1,4 +1,5 @@
 import NaoEncontrado from "../../errors/naoEncontrado.js";
+import { matchedData } from "express-validator";
 
 class UserController {
   constructor(UserService, TransactionUtil) {
@@ -7,7 +8,7 @@ class UserController {
   }
 
   async createUser(req, res, next) {
-    const { user } = req.body;
+    const { user } = matchedData(req, { locations: ["body"] });
     try {
       const response = await this.UserService.createUser(user);
       if (!response.insertId) {
@@ -44,8 +45,7 @@ class UserController {
   }
 
   async loginUser(req, res, next) {
-    const { email, senha } = req.body;
-
+    const { email, senha } = matchedData(req, { locations: ["body"] });
     try {
       const result = await this.UserService.loginUser(email, senha);
       res.status(200).json(result);
@@ -56,6 +56,7 @@ class UserController {
 
   async deleteUser(req, res, next) {
     const { userId } = req.params;
+    console.log("Deletando usuário com ID:", userId);
     try {
       const result = await this.UserService.deleteUser(userId);
       res.status(200).json({
