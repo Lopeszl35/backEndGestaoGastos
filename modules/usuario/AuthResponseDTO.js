@@ -1,8 +1,8 @@
-import { UsuarioEntity } from "./domain/UsuarioEntity.js";
-
 export default class AuthResponseDTO {
-  constructor(userRow, token) {
-    this.user = new UsuarioEntity(userRow).toPublicDTO();
+  // 🛡️ INJEÇÃO LIMPA: userData já vem mapeado (via toPublicDTO do Service)
+  constructor(userData, token) {
+    this.user = userData;
     this.token = token;
+    Object.freeze(this); // Imutabilidade total do DTO
   }
 }

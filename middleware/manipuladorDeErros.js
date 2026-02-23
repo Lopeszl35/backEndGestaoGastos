@@ -78,11 +78,18 @@ export default function manipuladorDeErros(err, req, res, next) {
   }
   
     // Erro desconhecido (programming error / bug / lib)
-    console.error('Erro não tratado:', err);
+    console.error('🔥 [CRITICAL BUG] Erro não tratado:', err);
 
-    return res.status(500).json({
-        message: 'Erro interno do servidor',
-        code: 'INTERNAL_SERVER_ERROR',
-        error: err,
-    });
+    const response = {
+        message: "Ocorreu um erro inesperado. Estamos trabalhando para resolver o problema.",
+        code: "INTERNAL_SERVER_ERROR",
+    };
+
+    if (process.env.NODE_ENV === "Production") {
+      response.developer_details = {
+        errorMessage: err.message,
+      };
+    }
+
+    return res.status(500).json(response);
 }

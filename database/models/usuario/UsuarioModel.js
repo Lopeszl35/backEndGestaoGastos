@@ -55,10 +55,22 @@ UsuarioModel.init(
             defaultValue: DataTypes.NOW,
             field: "data_cadastro",
         },
+        // coluna de Soft Delete declarada explicitamente para mapear o field
+        deletedAt: {
+            type: DataTypes.DATE,
+            allowNull: true, // DEVE ser null por padrão, caso contrário o usuário nasce deletado
+            field: "deleted_at"
+        }
     },
     {
         sequelize,
         tableName: "usuarios",
-        timestamps: false,
+        
+        // Mapeamentos de Soft Delete
+        timestamps: true, // Obrigatório para o paranoid funcionar
+        createdAt: "dataCadastro", // Dizemos ao Sequelize para usar nossa coluna existente
+        updatedAt: false, // Desativado para economizar armazenamento no BD (não precisamos rastrear updates aqui agora)
+        paranoid: true, // Transforma qualquer .destroy() em um UPDATE deleted_at = NOW()
+        deletedAt: "deletedAt", // Aponta para a propriedade 'deletedAt' definida no schema acima
     }
-)
+);

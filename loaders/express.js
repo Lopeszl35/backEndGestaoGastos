@@ -2,58 +2,57 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import session from "express-session";
-import helmet from "helmet"; // SEGURANÇA
-import rateLimit from "express-rate-limit"; // PROTEÇÃO CONTRA DDOS
-import manipulador404 from "../middleware/manipulador404.js";
-import manipuladorDeErros from "../middleware/manipuladorDeErros.js";
+import helmet from "helmet"; // BLINDAGEM DE HEADERS
+import rateLimit from "express-rate-limit"; // PROTEÇÃO DDOS
+import compression from "compression";
 
 export default ({ app }) => {
-  // 1. Proxy reverso (Essencial se rodar atrás de Nginx/Cloudflare/Heroku/AWS)
+  // 1. Proxy reverso (Essencial para IP real atrás de Load Balancers)
   app.set('trust proxy', 1);
 
   // 2. Segurança Básica (Headers HTTP)
   app.use(helmet());
 
-  // 3. Rate Limiting (Protege contra força bruta e DoS simples)
-  const limiter = rateLimit({
+  app.use(compression({
+    level: 6, // Nível de compressão (1-9). 6 é um bom equilíbrio entre compressão e desempenho.
+    threshold: 1024, // Comprime respostas maiores que 1KB
+  }))
+
+  // 3. Rate Limiting (Ajustado para realidade Mobile / CGNAT)
+  // Aplica um limite mais tolerante globalmente. Rotas sensíveis (como /login) 
+  // devem ter seus próprios limitadores mais agressivos lá nas rotas.
+  const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // Limite de 100 reqs por IP por janela
-    message: "Muitas requisições criadas a partir deste IP, tente novamente mais tarde.",
+    max: 1000, // Mais permissivo devido ao CGNAT das redes móveis
+    message: { error: "Muitas requisições. Tente novamente mais tarde." },
     standardHeaders: true, 
     legacyHeaders: false,
   });
-  // Aplica o limitador em todas as rotas (pode ser específico apenas para /auth se preferir)
-  app.use(limiter);
+  app.use(globalLimiter);
 
-  // 4. Configurações de Parsing e Logs
-  app.use(express.json());
-  app.use(morgan("dev")); // Log de desenvolvimento
+  // 4. Configurações de Parsing COM SANITIZAÇÃO DE TAMANHO
+  // 🛡️ Impede ataques de alocação de memória (Payloads excessivos)
+  app.use(express.json({ limit: "500kb" })); 
+  app.use(express.urlencoded({ extended: true, limit: "500kb" }));
+  
+  app.use(morgan("dev")); 
 
-  // 5. CORS (Cross-Origin Resource Sharing)
+  // 5. CORS (Estritamente fechado para Web)
   app.use(
     cors({
-      origin: "*", 
+      origin: function (origin, callback) {
+        if (!origin) {
+          callback(null, true);
+        } else {
+          callback(new Error("Acesso negado: API estritamente mobile."));
+        }
+      },
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
       allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
+      credentials: false, 
     })
   );
 
-  // 6. Gestão de Sessão (Se estiver usando sessão server-side)
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "chave_secreta_padrao_dev", // Fallback seguro para dev
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        maxAge: 1000 * 60 * 60 * 24, // 1 dia
-        secure: process.env.NODE_ENV === 'production', // HTTPS obrigatório em produção
-        httpOnly: true, // Protege contra XSS (JS não lê o cookie)
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Ajuste conforme seu frontend
-      },
-    })
-  );
-
+  
   return app;
 };

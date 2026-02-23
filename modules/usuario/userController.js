@@ -26,8 +26,8 @@ class UserController {
 
   async atualizarUsuario(req, res, next) {
     try {
-      const { userId } = req.params;
-      const { user } = req.body;
+      const { userId } = matchedData(req, { locations: ["params"] });
+      const { user } = matchedData(req, { locations: ["body"] });
 
       const result = await this.UserService.atualizarUsuario(
         Number(userId),
@@ -55,8 +55,7 @@ class UserController {
   }
 
   async deleteUser(req, res, next) {
-    const { userId } = req.params;
-    console.log("Deletando usuário com ID:", userId);
+    const { userId } = matchedData(req, { locations: ["params"] });
     try {
       const result = await this.UserService.deleteUser(userId);
       res.status(200).json({
@@ -69,7 +68,7 @@ class UserController {
   }
 
   async getUserSaldo(req, res, next) {
-    const { userId } = req.body;
+    const { userId } = matchedData(req, { locations: ["query"] });
     try {
       const saldo = await this.UserService.getUserSaldo(userId);
       res.status(200).json( saldo );
@@ -80,7 +79,7 @@ class UserController {
 
   async atualizarUserSaldo(req, res, next) {
     try {
-      const { userId, saldo } = req.body;
+      const { userId, saldo } = matchedData(req, { locations: ["body"] });
       const result = await this.UserService.atualizarUserSaldo(userId, saldo);
       res.status(200).json(result);
     } catch (erro) {
@@ -91,7 +90,7 @@ class UserController {
   async getUserData(req, res, next) {
     try {
       const { userId } = req.params;
-      const userData = await this.UserService.getUserData(userId);
+      const userData = await this.UserService.getUser(userId);
       if (!userData) {
         throw new NaoEncontrado("Usuário não encontrado");
       }

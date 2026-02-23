@@ -13,63 +13,71 @@ class UserService {
   }
 
   async createUser(userDataInput) {
-    const transaction = await sequelize.transaction();
-      // Hash da senha antes de salvar
-      const senhaHash = await hashPassword(userDataInput.senha_hash);
-
-      // Chama a Entity para criar o usuário
-      const novoUsuario = new UsuarioEntity({
-        ...userDataInput,
-        senha_hash: senhaHash
-      })
-
-     // 3. Persiste no Banco (Passando a transaction)
-      const resultModel = await this.UserRepository.createUser(
-        novoUsuario.toPersistence(), 
-        transaction
-      );
-
-      // 4 commit da transação
-      await transaction.commit();
-      novoUsuario.id_usuario = resultModel.insertId;
-
-      // 5. Gera o token com os dados corretos
-      const token = generateToken(novoUsuario.toPublicDTO());
-
-      return { 
-          insertId: resultModel.insertId, 
-          ...novoUsuario.toPublicDTO(), 
-          token
-      };
+    let transaction;
+    try {
+        transaction = await sequelize.transaction();
+        // Hash da senha antes de salvar
+        const senhaHash = await hashPassword(userDataInput.senha_hash);
+  
+        // Chama a Entity para criar o usuário
+        const novoUsuario = new UsuarioEntity({...userDataInput,senha_hash: senhaHash})
+  
+       // 3. Persiste no Banco (Passando a transaction)
+        const resultModel = await this.UserRepository.createUser(
+          novoUsuario.toPersistence(), 
+          transaction
+        );
+  
+        // 4 commit da transação
+        await transaction.commit();
+        novoUsuario.id_usuario = resultModel.insertId;
+  
+        // 5. Gera o token com os dados corretos
+        const token = generateToken(novoUsuario.toPublicDTO());
+  
+        return { 
+            insertId: resultModel.insertId, 
+            ...novoUsuario.toPublicDTO(), 
+            token
+        };
+    } catch (error) {
+      transaction.rollback();
+      throw error;
+    }
   }
 
   async deleteUser(userId) {
       const result = await this.UserRepository.deleteUser(userId);
+      const affectedRows = Array.isArray(result) ? result[0] : result.affectedRows;
+
+    if (!affectedRows || affectedRows === 0) {
+      throw new NaoEncontrado("Usuário não encontrado.");
+    }
       return result;
   }
 
   async atualizarUsuario(userId, updatesDto) {
     const payload = {};
-
     if (updatesDto.nome !== undefined) payload.nome = updatesDto.nome;
     if (updatesDto.email !== undefined) payload.email = updatesDto.email;
-    if (updatesDto.perfil_financeiro !== undefined)
-      payload.perfilFinanceiro = updatesDto.perfil_financeiro;
-    if (updatesDto.salario_mensal !== undefined)
-      payload.salarioMensal = updatesDto.salario_mensal;
-
-    if (updatesDto.senha !== undefined) {
-      payload.senhaHash = await hashPassword(updatesDto.senha);
-    }
-    console.log("payload: ", payload);
+    if (updatesDto.perfil_financeiro !== undefined) payload.perfilFinanceiro = updatesDto.perfil_financeiro;
+    if (updatesDto.salario_mensal !== undefined) payload.salarioMensal = updatesDto.salario_mensal;
+    if (updatesDto.senha !== undefined) payload.senhaHash = await hashPassword(updatesDto.senha);
 
     if (Object.keys(payload).length === 0) {
       return { affectedRows: 0, message: "Nenhum campo para atualizar." };
     }
 
-    return this.UserRepository.atualizarUsuario(userId, payload);
-  }
+    // 🛡️ Faz a operação atômica de escrita direto
+    const result = await this.UserRepository.atualizarUsuario(userId, payload);
+    const affectedRows = Array.isArray(result) ? result[0] : result.affectedRows;
 
+    if (!affectedRows || affectedRows === 0) {
+      throw new NaoEncontrado("Usuário não encontrado.");
+    }
+
+    return result;
+  }
   async loginUser(email, senha) {
       // userModel vem do Sequelize (camelCase: idUsuario, senhaHash...)
       const userModel = await this.UserRepository.getUserByEmail(email);
@@ -78,11 +86,7 @@ class UserService {
         throw new NaoEncontrado("Usuário não encontrado");
       } 
       
-      const senhaValida = await Auth.senhaValida(senha, userModel.senhaHash);
-
-      if (!senhaValida) {
-        throw new ErroValidacao("Senha incorreta");
-      }
+      await Auth.senhaValida(senha, userModel.senhaHash);
 
       // 1. Converte Model -> Entity (para aplicar regras/formatação)
       const entity = new UsuarioEntity(userModel);
@@ -108,19 +112,11 @@ class UserService {
   }
 
   async atualizarUserSaldo(userId, novoSaldo) {
-    try {
       const novoSaldoAtualizado = await this.UserRepository.atualizarUserSaldo(
         userId,
         novoSaldo
       );
       return novoSaldoAtualizado;
-    } catch (error) {
-      console.log(
-        "Erro ao atualizar o saldo do usuário no modelo:",
-        error.message
-      );
-      throw error;
-    }
   }
 
   async diminuirSaldoAtualAposPagarFaturaCartao({ id_usuario, valor, connection }) {

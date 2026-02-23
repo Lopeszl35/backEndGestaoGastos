@@ -9,8 +9,7 @@ class ErroSqlHandler {
 
     const msg = this._getMensagemSql(error);
 
-    // DICA: Se a mensagem contiver "CONSTRAINT" e "failed", é uma violação de regra (Check Constraint),
-    // independente do código que o driver enviou (4025, 3819, etc).
+    // Regra de Validação de Domínio (Check Constraints)
     if (msg.includes("CONSTRAINT") && msg.includes("failed")) {
         throw this.erroCheckConstraint(error);
     }
@@ -18,31 +17,22 @@ class ErroSqlHandler {
     switch (error.code) {
       case "ER_DUP_ENTRY":
         throw this.erroDuplicado(error);
-
       case "ER_BAD_FIELD_ERROR":
         throw this.erroCampoInvalido(error);
-
       case "ER_BAD_NULL_ERROR":
         throw this.erroCampoNulo(error);
-
       case "ER_NO_DEFAULT_FOR_FIELD":
         throw this.erroCampoSemDefault(error);
-
       case "ER_NO_SUCH_TABLE":
         throw this.erroTabelaNaoEncontrada(error);
-
       case "WARN_DATA_TRUNCATED":
         throw this.erroDadoTruncado(error);
-
-      // O driver pode confundir erro de Constraint (4025) com erro de Tamanho (4025 antigo)
-      // Como já tratamos CONSTRAINT no if lá em cima, se cair aqui é realmente erro de tamanho/disco.
       case "ER_INNODB_AUTOEXTEND_SIZE_OUT_OF_RANGE": 
         throw this.erroTamanhoMaximoExcedido(error);
-
       default:
-        // Log para ajudar a descobrir novos códigos no futuro
-        console.error("Erro SQL não mapeado:", error.code, msg);
-        throw new ErroBase("Erro interno no banco de dados.", 500);
+        console.error("🔥 [UNMAPPED SQL ERROR]:", error.code, msg);
+        // Retorna erro genérico 500 de servidor, sem vazar a mensagem real do SQL
+        throw new ErroBase("Erro interno ao processar os dados.", 500, "DATABASE_ERROR");
     }
   }
 
@@ -52,48 +42,50 @@ class ErroSqlHandler {
 
   static erroCheckConstraint(error) {
     const msg = this._getMensagemSql(error);
-    
-    // Tenta extrair o nome da constraint. 
-    // Padrão comum: CONSTRAINT `nome_da_regra` failed for ...
     const match = msg.match(/CONSTRAINT `(.+?)` failed/i) || msg.match(/CONSTRAINT "(.+?)" failed/i);
     const nomeConstraint = match ? match[1] : "desconhecida";
 
-    // Mapeamento amigável 
     const mapaErros = {
         "chk_gastos_cartao_credito": "Para gastos no Crédito, é obrigatório vincular um Cartão.",
-        "chk_valor_positivo": "O valor deve ser maior que zero.",
-        
+        "chk_valor_positivo": "O valor informado deve ser maior que zero.",
     };
 
     const mensagemAmigavel = mapaErros[nomeConstraint];
-
     if (mensagemAmigavel) {
         return new RequisicaoIncorreta(mensagemAmigavel);
     }
 
-    // Se não tiver tradução, retorna o erro técnico genérico mas claro
-    return new RequisicaoIncorreta(`Regra de validação do banco não atendida: ${nomeConstraint}`);
+    // 🛡️ Segurança: Loga o nome real no console, mas diz pro cliente algo genérico
+    console.error(`Constraint não mapeada: ${nomeConstraint}`);
+    return new RequisicaoIncorreta("Regra de negócio violada. Verifique os dados enviados.");
   }
 
   static erroDuplicado(error) {
     const msg = this._getMensagemSql(error);
-
-      if (msg.includes("uq_cartao_unico_usuario_ativo")) {
-        return new RequisicaoIncorreta("Cartão já cadastrado.");
-      }
-
-    // mantém sua regra atual
-    if (msg.includes("email")) {
-      return new RequisicaoIncorreta("Email já cadastrado.");
-    }
-
-    // melhora: tenta descobrir qual chave/coluna foi duplicada
     const chave = this.extrairChaveDuplicada(msg);
-    if (chave) {
-      return new ErroBase("Registro duplicado.", 409, [`Chave duplicada: '${chave}'.`]);
+
+    // 🛡️ DESIGN PATTERN: Dictionary em vez de if/else aninhados
+    const mapaDuplicidade = {
+      "uq_cartao_unico_usuario_ativo": "Este cartão já está cadastrado na sua conta.",
+      "usuarios.email": "Este email já está em uso.",
+      "uq_categoria_usuario": "Você já possui uma categoria com este nome."
+    };
+
+    // Tenta encontrar a mensagem pelo nome exato da chave no banco
+    let mensagemAmigavel = mapaDuplicidade[chave];
+
+    // Fallback: se o banco retornou a chave de forma diferente, busca por partes (includes)
+    if (!mensagemAmigavel) {
+      if (msg.includes("email")) mensagemAmigavel = mapaDuplicidade["usuarios.email"];
     }
 
-    return new ErroBase("Registro duplicado.", 409);
+    if (mensagemAmigavel) {
+      return new RequisicaoIncorreta(mensagemAmigavel); // Status 400 (Bad Request)
+    }
+
+    console.error(`Duplicidade não mapeada para a chave: ${chave}`);
+    // Status 409 (Conflict) fixado corretamente através do ErroBase
+    return new ErroBase("Os dados enviados já existem no sistema.", 409, "CONFLICT");
   }
 
   static erroCampoNulo(error) {
@@ -104,114 +96,60 @@ class ErroSqlHandler {
       this.extrairCampoPorColumn(msg);
 
     return new RequisicaoIncorreta(
-      "Campos obrigatórios não informados.",
-      campo ? [`Campo '${campo}' é obrigatório.`] : null
+      "Informações incompletas.",
+      campo ? [`O campo '${campo}' não pode estar vazio.`] : ["Existem campos obrigatórios em branco."]
     );
   }
 
   static erroCampoSemDefault(error) {
-    // Ex: "Field 'uuid_cartao' doesn't have a default value"
-    const msg = this._getMensagemSql(error);
-    const campo = this.extrairCampoPorFieldNoDefault(msg);
-
-    return new RequisicaoIncorreta(
-      "Campos obrigatórios não informados.",
-      campo ? [`Campo '${campo}' é obrigatório.`] : null
-    );
+    return new RequisicaoIncorreta("Faltam dados obrigatórios para concluir o cadastro.");
   }
 
   static erroTabelaNaoEncontrada(error) {
-    return new ErroBase(
-      "Tabela necessária não encontrada no banco de dados. Entre em contato com o desenvolvedor.",
-      500
-    );
+    return new ErroBase("Serviço temporariamente indisponível.", 500, "INTERNAL_ERROR");
   }
 
   static erroCampoInvalido(error) {
-    const msg = this._getMensagemSql(error);
-
-    // melhora: pega o campo exato quando for "Unknown column 'x' in 'field list'"
-    const campo =
-      this.extrairCampoUnknownColumn(msg) ||
-      this.extrairCampoPorColumn(msg);
-
-    return new RequisicaoIncorreta(
-      campo
-        ? "Campo inválido informado na requisição."
-        : "Campo inválido informado na requisição.",
-      campo ? [`Campo inválido: '${campo}'.`] : null
-    );
+    return new RequisicaoIncorreta("A requisição contém dados que não são reconhecidos pelo sistema.");
   }
 
   static erroDadoTruncado(error) {
-    return new RequisicaoIncorreta("Valor inválido ou muito grande para algum campo.");
+    return new RequisicaoIncorreta("Um dos valores informados é muito extenso.");
   }
 
-  static extrairCampo(message) {
-    if (!message) return null;
-    // ER_BAD_NULL_ERROR: Column 'nome' cannot be null
-    const match = message.match(/Column '(.+?)'/i);
-    return match ? match[1] : null;
+  static erroTamanhoMaximoExcedido(error) {
+    if (error.sqlMessage && error.sqlMessage.includes('cartao_credito')) {
+      return new ErroBase('Limite de operações excedido para este cartão.', 422, "UNPROCESSABLE_ENTITY");
+    }
+    return new ErroBase("A operação excedeu o tamanho máximo permitido.", 500, "CAPACITY_EXCEEDED");
   }
 
+  // -----------------------------
+  // FUNÇÕES UTILITÁRIAS DE REGEX
+  // -----------------------------
 
   static _getMensagemSql(error) {
-    // para SQL puro: geralmente vem em error.message
-    // para mysql2/mariadb: pode vir em error.sqlMessage
     return String(error.sqlMessage || error.message || "");
   }
 
-  // "Unknown column 'ultimos_4' in 'field list'"
-  static extrairCampoUnknownColumn(message) {
-    if (!message) return null;
-    const match = message.match(/Unknown column '(.+?)'/i);
-    return match ? match[1] : null;
-  }
-
-  // "Column 'nome' cannot be null"
   static extrairCampoPorColumnCannotBeNull(message) {
-    if (!message) return null;
     const match = message.match(/Column '(.+?)' cannot be null/i);
     return match ? match[1] : null;
   }
 
-  // "Column 'x'..."
   static extrairCampoPorColumn(message) {
-    if (!message) return null;
     const match = message.match(/Column '(.+?)'/i);
     return match ? match[1] : null;
   }
 
-  // "Field 'uuid_cartao' doesn't have a default value"
-  static extrairCampoPorFieldNoDefault(message) {
-    if (!message) return null;
-    const match = message.match(/Field '(.+?)' doesn't have a default value/i);
-    return match ? match[1] : null;
-  }
-
-  // fallback: "Field 'x' ..."
   static extrairCampoPorField(message) {
-    if (!message) return null;
     const match = message.match(/Field '(.+?)'/i);
     return match ? match[1] : null;
   }
 
-  // "Duplicate entry '...' for key 'uq_cartoes_credito_uuid'"
   static extrairChaveDuplicada(message) {
-    if (!message) return null;
     const match = message.match(/for key '(.+?)'/i);
     return match ? match[1] : null;
-  }
-
-  static erroTamanhoMaximoExcedido(error) {
-    if (error.sqlMessage.includes('cartao_credito')) {
-      return new RequisicaoIncorreta('Não foi possivel adicionar o gasto ao cartão devido ao limite.', 500);
-    }
-    return new RequisicaoIncorreta("Tamanho do campo excedido.", 500);
-  }
-
-  static _getMensagemSql(error) {
-    return String(error.sqlMessage || error.message || "");
   }
 }
 

@@ -1,14 +1,18 @@
-import bcrypt from 'bcrypt';
+// auth/auth.js
+import { comparePassword } from './passwordHash.js';
 import ErroValidacao from '../errors/ValidationError.js';
 
 export default class Auth {
     static async senhaValida(password, senhaHash) {
-        // Verifica se a senha é válida
-        const senhaValida = await bcrypt.compare(password, senhaHash);
-            if (!senhaValida) {
-                throw new ErroValidacao([{ msg: "Senha inválida." }]);
-            }
-        return senhaValida;
-    }
+        // Recebe o resultado da abstração
+        const { isValid, isLegacy } = await comparePassword(password, senhaHash);
+        
+        if (!isValid) {
+            // SEGURANÇA: Nunca diga "Senha inválida". Diga "Credenciais inválidas".
+            // Dizer "senha inválida" confirma para o hacker que o email existe na base de dados.
+            throw new ErroValidacao([{ msg: "Credenciais inválidas." }]); 
+        }
 
+        return { isValid, isLegacy };
+    }
 }

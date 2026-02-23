@@ -1,6 +1,5 @@
 import ValidationError from "../../../errors/ValidationError.js";
 import RequisicaoIncorreta from "../../../errors/RequisicaoIncorreta.js";
-import { token } from "morgan";
 
 export class UsuarioEntity {
   constructor({
@@ -120,7 +119,6 @@ export class UsuarioEntity {
       saldo_atual: this.saldo_atual,
       saldo_inicial: this.saldo_inicial,
       data_cadastro: this.data_cadastro,
-      token: this.token
     };
   }
 }
