@@ -94,7 +94,8 @@ export class UsuarioEntity {
       saldo_atual: this.saldo_atual,
     };
   }
-
+  
+// Método para exportar dados para o Repository salvar (camelCase)
   toPersistence() {
     return {
       idUsuario: this.id_usuario,

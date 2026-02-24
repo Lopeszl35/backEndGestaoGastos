@@ -50,6 +50,37 @@ class UserController {
     }
   }
 
+  async refreshToken(req, res, next) {
+    try {
+      const { refreshToken } = req.body; 
+      
+      const tokens = await this.UserService.refreshAccessToken(refreshToken);
+      
+      res.status(200).json({
+        message: "Sessão renovada com sucesso.",
+        status: 200,
+        data: tokens
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async logout(req, res, next) {
+    try {
+      const { refreshToken } = req.body;
+      
+      await this.UserService.logoutUser(refreshToken);
+      
+      res.status(200).json({
+        message: "Logout efetivado.",
+        status: 200
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async deleteUser(req, res, next) {
     const userId = req.userId;
     try {

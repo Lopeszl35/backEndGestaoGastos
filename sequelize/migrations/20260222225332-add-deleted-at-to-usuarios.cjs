@@ -2,15 +2,12 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  // O método UP é executado ao rodar: npx sequelize-cli db:migrate
   async up (queryInterface, Sequelize) {
     const tableInfo = await queryInterface.describeTable('usuarios');
     
-    // Só executamos a alteração estrutural se a coluna não existir,
-    // evitando o erro "Duplicate column name".
+   
     if (!tableInfo.deleted_at) {
       await queryInterface.addColumn('usuarios', 'deleted_at', {
-        // Na Ciência da Computação, datas de deleção lógica exigem tipagem temporal (DATETIME/TIMESTAMP)
         type: Sequelize.DATE,
         
         // 🛡️ REGRA DE NEGÓCIO: Se for NULL, a conta está ATIVA. Se tiver data, está DELETADA (Soft Delete).

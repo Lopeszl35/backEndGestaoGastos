@@ -23,6 +23,14 @@ export default (userController) => {
     userController.loginUser(req, res, next);
   });
 
+  router.post("/auth/refreshToken", (req, res, next) => {
+    userController.refreshToken(req, res, next);
+  });
+
+  router.post("/auth/logout", (req, res, next) => {
+    userController.logout(req, res, next);
+  });
+
   router.get("/userSaldo", verifyToken, validateGetUserSaldo, (req, res, next) => {
     userController.getUserSaldo(req, res, next);
   });

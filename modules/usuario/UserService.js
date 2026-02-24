@@ -1,5 +1,6 @@
 import NaoEncontrado from "../../errors/naoEncontrado.js";
 import ErroValidacao from "../../errors/ValidationError.js";
+import ErroBase from "../../errors/Errobase.js";
 import { generateToken } from "../../auth/token.js";
 import Auth from "../../auth/auth.js";
 import AuthResponseDTO from "./AuthResponseDTO.js";
@@ -78,27 +79,75 @@ class UserService {
 
     return result;
   }
+
   async loginUser(email, senha) {
       // userModel vem do Sequelize (camelCase: idUsuario, senhaHash...)
       const userModel = await this.UserRepository.getUserByEmail(email);
-      
-      if (!userModel) {
-        throw new NaoEncontrado("Usuário não encontrado");
-      } 
+      if (!userModel) throw new NaoEncontrado("Credenciais inválidas.");
       
       await Auth.senhaValida(senha, userModel.senhaHash);
 
       // 1. Converte Model -> Entity (para aplicar regras/formatação)
       const entity = new UsuarioEntity(userModel);
-      
       // 2. Gera o objeto público (snake_case: id_usuario, saldo_atual...)
       const userPublicData = entity.toPublicDTO(); 
 
-      // 3. Gera o token com os dados corretos
-      const token = generateToken(userPublicData);
+      // 3. Gera o par de tokens (acessToken JWT + refreshToken opaco)
+      const { acessToken, refreshToken } = generateToken(userPublicData);
+
+      // Calcula o tempo de expiração do token (ex: 1 hora)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // token válido por 7 dias
+
+      // 🛡️ Salva o refresh token opaco no banco de dados
+      await this.UserRepository.salvarRefreshToken(userModel.idUsuario, refreshToken, expiresAt);
       
       // 4. Retorna DTO com os dados em snake_case
-      return new AuthResponseDTO(userPublicData, token);
+      return new AuthResponseDTO(userPublicData, acessToken, refreshToken);
+  }
+
+  async refreshAcessToken(oldRefreshToken) {
+    if (!oldRefreshToken) {
+      throw new ErroBase("Refresh Token não fornecido.", 400, "BAD_REQUEST");
+    }
+
+    const tokenRecord = await this.UserRepository.buscarRefreshToken(oldRefreshToken);
+
+    // Camadas de segurança: Verificação de existência e validade do token
+    if (!tokenRecord) throw new ErroBase("Sessão inválida.", 401, "UNAUTHORIZED");
+    if (tokenRecord.revoked) throw new ErroBase("Sessão revogada por motivos de segurança. Faça login novamente.", 401, "UNAUTHORIZED");
+    if (new Date() > new Date(tokenRecord.expires_at)) {
+      throw new ErroBase("Sessão expirada. Faça login novamente.", 401, "UNAUTHORIZED");
+    }
+
+    const userModel = await this.UserRepository.getUserById(tokenRecord.id_usuario);
+    if (!userModel) throw new NaoEncontrado("Usuário associado ao token não encontrado.");
+
+    const entity = new UsuarioEntity(userModel);
+    const userPublicData = entity.toPublicDTO();
+
+    // Gera um novo par de tokens
+    await this.UserRepository.revogarRefreshToken(oldRefreshToken);
+
+    const { acessToken, refreshToken: newRefreshToken } = generateToken(userPublicData);
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // token válido por 7 dias
+
+    await this.UserRepository.salvarRefreshToken(userModel.idUsuario, newRefreshToken, expiresAt);
+
+    return {
+      acessToken,
+      refreshToken: newRefreshToken
+    };
+  }
+
+  async logout(refreshToken) {
+    if (!refreshToken) {
+      return;
+    }
+    await this.UserRepository.revogarRefreshToken(refreshToken);
+    return { message: "Logout realizado com sucesso." };
   }
 
   async getUserSaldo(userId) {

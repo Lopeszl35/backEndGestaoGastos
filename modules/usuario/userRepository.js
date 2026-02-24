@@ -1,8 +1,56 @@
-import { UsuarioModel } from "../../database/models/index.js";
+import { UsuarioModel, RefreshTokenModel } from "../../database/models/index.js";
 import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
 import { sequelize } from "../../database/sequelize.js";
 
 class UserRepository {
+
+  // ==========================================
+  // 🛡️ GESTÃO DE SESSÕES (REFRESH TOKENS)
+  // ==========================================
+
+  async salvarRefreshToken(idUsuario, token, expiresAt, transaction = null) {
+    try {
+      await RefreshTokenModel.create(
+        {
+        token,
+        id_usuario: idUsuario,
+        revoked: false,
+        expires_at: expiresAt
+      },
+      { transaction }
+    );
+    } catch (error) {
+      ErroSqlHandler.tratarErroSql(error);
+      throw error;
+    }
+  }
+
+  async buscarRefreshToken(tokenString) {
+    try {
+      const tokenRecord = await RefreshTokenModel.findOne(
+        {
+          where: { token: tokenString }
+        }
+      );
+      return tokenRecord ? tokenRecord.toJSON() : null;
+    } catch (error) {
+      ErroSqlHandler.tratarErroSql(error);
+      throw error;
+    }
+  }
+
+  async revogarRefreshToken(tokenString) {
+    try {
+      const [ linhasAfetadas ] = await RefreshTokenModel.update(
+        { revoked: true },
+        { where: { token: tokenString } }
+      );
+      return linhasAfetadas; // Retorna o número de tokens revogados (0 ou 1)
+    } catch (error) {
+      ErroSqlHandler.tratarErroSql(error);
+      throw error;
+    }
+  }
   
   // ==========================================
   // 🛡️ MÉTODOS DE ESCRITA E ATUALIZAÇÃO
@@ -12,7 +60,6 @@ class UserRepository {
     try {
       // 🛡️ DEFENSIVE PROGRAMMING + PERFORMANCE: Operação Atômica (Execute-in-Place).
       // Instruímos o MySQL a subtrair o valor diretamente no disco.
-      // Removemos a busca prévia (Read-before-Write) que causava overhead de memória e vulnerabilidade TOCTOU.
       const [linhasAfetadas] = await UsuarioModel.decrement("saldoAtual", { 
         by: valor, 
         where: { idUsuario: id_usuario },
@@ -27,7 +74,7 @@ class UserRepository {
       return { affectedRows: affectedRows || 0 };
     } catch (error) {
       ErroSqlHandler.tratarErroSql(error);
-      throw error; // Garante o Bubble Up do erro se o handler não forçar a parada
+      throw error;
     }
   }
 
