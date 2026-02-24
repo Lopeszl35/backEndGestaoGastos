@@ -5,7 +5,7 @@ import crypto from 'crypto';
  * @param {Object} user Entidade pública do usuário
  * @returns {Object} { accessToken, refreshToken }
  */
-export function generateTokens(user) {
+export function generateToken(user) {
     // 🛡️ 1. ACCESS TOKEN (Stateless - JWT)
     // Janela de ataque reduzida para 15 minutos. Protege a CPU do servidor,
     // pois o verifyToken.js validará isso sem tocar no banco de dados.

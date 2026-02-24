@@ -1,5 +1,5 @@
 import { DataTypes, Model } from "sequelize";
-import { sequelize } from "../../database/sequelize.js"; // Ajuste o caminho se necessário
+import { sequelize } from "../../sequelize.js";
 
 export class RefreshTokenModel extends Model {}
 
