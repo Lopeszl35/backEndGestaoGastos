@@ -11,9 +11,6 @@ class UserController {
     const { user } = matchedData(req, { locations: ["body"] });
     try {
       const response = await this.UserService.createUser(user);
-      if (!response.insertId) {
-        throw new Error("Erro ao criar o usuário: " + JSON.stringify(response));
-      }
       res.status(201).json({
         message: "Usuário criado com sucesso",
         status: 201,
@@ -26,18 +23,17 @@ class UserController {
 
   async atualizarUsuario(req, res, next) {
     try {
-      const { userId } = matchedData(req, { locations: ["params"] });
+      const userId = req.userId;
       const { user } = matchedData(req, { locations: ["body"] });
 
       const result = await this.UserService.atualizarUsuario(
-        Number(userId),
+        userId,
         user
       );
 
       res.status(200).json({
         message: "Usuário atualizado com sucesso",
         status: 200,
-        data: result,
       });
     } catch (error) {
       next(error);
@@ -55,9 +51,9 @@ class UserController {
   }
 
   async deleteUser(req, res, next) {
-    const { userId } = matchedData(req, { locations: ["params"] });
+    const userId = req.userId;
     try {
-      const result = await this.UserService.deleteUser(userId);
+      await this.UserService.deleteUser(userId);
       res.status(200).json({
         message: "Usuário deletado com sucesso",
         status: 200,
@@ -68,15 +64,23 @@ class UserController {
   }
 
   async getUserSaldo(req, res, next) {
-    const { userId } = matchedData(req, { locations: ["query"] });
+    const userId = req.userId;
     try {
       const saldo = await this.UserService.getUserSaldo(userId);
+      if (!saldo) {
+        throw new NaoEncontrado("Saldo do usuário não encontrado");
+      }
       res.status(200).json( saldo );
     } catch (error) {
       next(error);
     }
   }
 
+  /*
+  ❌ MÉTODO REMOVIDO: atualizarUserSaldo
+  // O saldo deve ser alterado indiretamente por outras rotas de domínio financeiro 
+  // (ex: adicionarGastos, registrarReceita, pagarFatura), 
+  // que chamam os métodos de debitar/aumentarSaldo da UsuarioEntity internamente.
   async atualizarUserSaldo(req, res, next) {
     try {
       const { userId, saldo } = matchedData(req, { locations: ["body"] });
@@ -86,10 +90,11 @@ class UserController {
       next(erro);
     }
   }
+  */
 
   async getUserData(req, res, next) {
     try {
-      const { userId } = req.params;
+      const userId = req.userId;
       const userData = await this.UserService.getUser(userId);
       if (!userData) {
         throw new NaoEncontrado("Usuário não encontrado");

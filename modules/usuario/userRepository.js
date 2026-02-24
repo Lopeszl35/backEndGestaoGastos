@@ -1,5 +1,6 @@
 import { UsuarioModel } from "../../database/models/index.js";
 import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
+import { sequelize } from "../../database/sequelize.js";
 
 class UserRepository {
   
@@ -117,20 +118,31 @@ class UserRepository {
   }
 
   async deleteUser(userId) {
+    const transaction = await UsuarioModel.sequelize.transaction();
     try {
-      // O Sequelize.destroy() retorna um inteiro (número de linhas afetadas)
-      const result = await UsuarioModel.destroy({
-        where: { idUsuario: userId },
-      });
+      const usuario = await UsuarioModel.findByPk(userId, { transaction });
+      if (!usuario) {
+        await transaction.rollback();
+        return { affectedRows: 0 }; // O serviço avaliará e lançará o NaoEncontrado
+      }
+
+      // 🛡️ PRÁTICA DE SEGURANÇA: Mascaramento de Email antes do Soft Delete
+      const maskedEmail = `${usuario.email}.deleted.${Date.now()}`;
+      // Atualiza o email para evitar conflitos únicos e preservar a integridade referencial, mesmo em Soft Deletes.
+      await usuario.update({ email: maskedEmail }, { transaction });
+
       
-      // 🛡️ ARQUITETURA LIMPA: O Repositório devolve apenas a matemática (0 ou 1). 
-      // O UserService avaliará esse 'result' e lançará o NaoEncontrado se for 0.
-      return { affectedRows: result }; 
+      await usuario.destroy({ transaction });
+      await transaction.commit();
+      
+      return { affectedRows: 1 };
     } catch (error) {
+      await transaction.rollback();
       ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
 }
+
 
 export default UserRepository;

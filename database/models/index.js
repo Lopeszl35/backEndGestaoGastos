@@ -11,6 +11,7 @@ import { FinanciamentoModel } from "./financiamentos/FinanciamentoModel.js";
 import { FinanciamentoParcelaModel } from "./financiamentos/FinanciamentoParcelaModel.js";
 import { InvestimentoModel } from "./investimentos/InvestimentoModel.js";
 import { ReceitaModel } from "./receitas/ReceitaModel.js";
+import { RefreshTokenModel } from "./refreshToken/RefreshTokenModel.js";
 
 export function configurarRelacionamentosModelos() {
   // --- Cartões ---
@@ -148,6 +149,18 @@ export function configurarRelacionamentosModelos() {
     foreignKey: "id_usuario",
     as: "receitas"
   });
+
+  // RefreshToken <-> Usuário
+  RefreshTokenModel.belongsTo(UsuarioModel, {
+    foreignKey: "id_usuario",
+    targetKey: "idUsuario",
+    as: "usuario"
+  });
+  UsuarioModel.hasMany(RefreshTokenModel, {
+    foreignKey: "id_usuario",
+    sourceKey: "idUsuario",
+    as: "refreshTokens"
+  });
 }
 
 export {
@@ -164,4 +177,5 @@ export {
   FinanciamentoParcelaModel,
   InvestimentoModel,
   ReceitaModel,
+  RefreshTokenModel
 };
