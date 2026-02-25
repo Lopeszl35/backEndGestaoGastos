@@ -6,7 +6,7 @@ import {
   validateCreateUser,
   validateLoginUser,
   validateUpdateUser,
-  validateDeleteUser,
+  validateLoginUser,
 } from "./validateUsers.js";
 
 const router = express.Router();
@@ -46,7 +46,7 @@ export default (userController) => {
     userController.getUserData(req, res, next);
   });
 
-  router.delete("/deleteUser/me", verifyToken, validateDeleteUser, (req, res, next) => {
+  router.delete("/deleteUser/me", verifyToken, (req, res, next) => {
     userController.deleteUser(req, res, next);
   });
 

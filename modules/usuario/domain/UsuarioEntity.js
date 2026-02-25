@@ -20,7 +20,7 @@ export class UsuarioEntity {
     this.id_usuario = id_usuario || idUsuario;
     this.nome = this.#validarNome(nome);
     this.email = this.#validarEmail(email);
-    this.senha_hash = senha_hash || senhaHash; // O hash é gerado antes ou no setter, mas a entidade guarda o estado
+    this.senha_hash = senha_hash || senhaHash;
     this.perfil_financeiro = perfil_financeiro || perfilFinanceiro || "moderado";
     
     // Normalização de valores numéricos
@@ -28,8 +28,8 @@ export class UsuarioEntity {
     this.saldo_inicial = this.#normalizarValor(saldo_inicial);
     
     // Prioridade para saldo_atual se existir, senão usa saldoAtual, senão saldo_inicial
-    const saldo = saldo_atual !== undefined ? saldo_atual : (saldoAtual !== undefined ? saldoAtual : this.saldo_inicial);
-    this.saldo_atual = this.#normalizarValor(saldo);
+    //const saldo = saldo_atual !== undefined ? saldo_atual : (saldoAtual !== undefined ? saldoAtual : this.saldo_inicial);
+    this.saldo_atual = this.#normalizarValor(saldo_atual || saldoAtual || this.saldo_inicial);
 
     this.data_cadastro = data_cadastro;
   }
