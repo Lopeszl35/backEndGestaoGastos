@@ -1,10 +1,10 @@
-// loaders/express.js
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet"; // BLINDAGEM DE HEADERS
 import rateLimit from "express-rate-limit"; // PROTEÇÃO DDOS
 import compression from "compression";
+import requireJson from "../middleware/requireJson.js"; // Middleware para exigir JSON em métodos que modificam dados
 
 export default ({ app }) => {
   // 1. Proxy reverso (Essencial para IP real atrás de Load Balancers)
@@ -33,6 +33,8 @@ export default ({ app }) => {
   // 4. Configurações de Parsing COM SANITIZAÇÃO DE TAMANHO
   // 🛡️ Impede ataques de alocação de memória (Payloads excessivos)
   app.use(express.json({ limit: "500kb" })); 
+  app.use(requireJson); // Middleware para exigir JSON em métodos que modificam dados (POST, PUT, PATCH, DELETE)
+  // 🛡️ Impede ataques de alocação de memória (Payloads excessivos)
   app.use(express.urlencoded({ extended: true, limit: "500kb" }));
   
   app.use(morgan("dev")); 
