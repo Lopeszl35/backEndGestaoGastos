@@ -5,8 +5,6 @@ import { authLimiter } from "../../middleware/authLimiter.js";
 import {
   validateCreateUser,
   validateLoginUser,
-  validateGetUserSaldo,
-  validateUserSaldo,
   validateUpdateUser,
   validateDeleteUser,
 } from "./validateUsers.js";
@@ -31,11 +29,11 @@ export default (userController) => {
     userController.logout(req, res, next);
   });
 
-  router.get("/userSaldo", verifyToken, validateGetUserSaldo, (req, res, next) => {
+  router.get("/userSaldo", verifyToken, (req, res, next) => {
     userController.getUserSaldo(req, res, next);
   });
 
-  router.put("/userSaldo", verifyToken, validateUserSaldo, (req, res, next) => {
+  router.put("/userSaldo", verifyToken, (req, res, next) => {
     userController.atualizarUserSaldo(req, res, next);
   });
 

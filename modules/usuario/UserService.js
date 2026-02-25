@@ -1,5 +1,5 @@
 import NaoEncontrado from "../../errors/naoEncontrado.js";
-import ErroValidacao from "../../errors/ValidationError.js";
+import ErroNaoAutorizado from "../../errors/ErroNaoAutorizado.js";
 import ErroBase from "../../errors/Errobase.js";
 import { generateToken } from "../../auth/token.js";
 import Auth from "../../auth/auth.js";
@@ -95,7 +95,7 @@ class UserService {
   async loginUser(email, senha) {
       // userModel vem do Sequelize (camelCase: idUsuario, senhaHash...)
       const userModel = await this.UserRepository.getUserByEmail(email);
-      if (!userModel) throw new NaoEncontrado("Credenciais inválidas.");
+      if (!userModel) throw new ErroNaoAutorizado("Credenciais inválidas.");
       
       await Auth.senhaValida(senha, userModel.senhaHash);
 

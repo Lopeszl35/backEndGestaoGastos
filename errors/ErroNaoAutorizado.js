@@ -1,0 +1,7 @@
+import ErroBase from "./Errobase";
+
+export default class ErroNaoAutorizado extends ErroBase {
+    constructor(message = 'Acesso não autorizado', details = null) {
+        super(message, 401, details);
+    }
+}

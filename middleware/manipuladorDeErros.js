@@ -85,7 +85,7 @@ export default function manipuladorDeErros(err, req, res, next) {
         code: "INTERNAL_SERVER_ERROR",
     };
 
-    if (process.env.NODE_ENV === "Production") {
+    if (process.env.NODE_ENV === "production") {
       response.developer_details = {
         errorMessage: err.message,
       };
