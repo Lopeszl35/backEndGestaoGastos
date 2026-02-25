@@ -39,16 +39,16 @@ export default (userController) => {
     userController.atualizarUserSaldo(req, res, next);
   });
 
-  router.put("/atualizarUsuario/:userId", verifyToken, validateUpdateUser, (req, res, next) => {
+  router.put("/atualizarUsuario/me", verifyToken, validateUpdateUser, (req, res, next) => {
     userController.atualizarUsuario(req, res, next);
   }
   );
 
-  router.get("/userData/:userId", verifyToken, (req, res, next) => {
+  router.get("/userData/me", verifyToken, (req, res, next) => {
     userController.getUserData(req, res, next);
   });
 
-  router.delete("/deleteUser/:userId", verifyToken, validateDeleteUser, (req, res, next) => {
+  router.delete("/deleteUser/me", verifyToken, validateDeleteUser, (req, res, next) => {
     userController.deleteUser(req, res, next);
   });
 
