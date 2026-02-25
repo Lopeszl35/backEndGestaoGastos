@@ -14,35 +14,47 @@ class UserService {
   }
 
   async createUser(userDataInput) {
+    // Cria variavel de transação para controle de atomicidade
     let transaction;
     try {
-        transaction = await sequelize.transaction();
-        // Hash da senha antes de salvar
-        const senhaHash = await hashPassword(userDataInput.senha_hash);
-  
-        // Chama a Entity para criar o usuário
-        const novoUsuario = new UsuarioEntity({...userDataInput,senha_hash: senhaHash})
-  
-       // 3. Persiste no Banco (Passando a transaction)
-        const resultModel = await this.UserRepository.createUser(
-          novoUsuario.toPersistence(), 
-          transaction
-        );
-  
-        // 4 commit da transação
-        await transaction.commit();
-        novoUsuario.id_usuario = resultModel.insertId;
-  
-        // 5. Gera o token com os dados corretos
-        const token = generateToken(novoUsuario.toPublicDTO());
-  
-        return { 
-            insertId: resultModel.insertId, 
-            ...novoUsuario.toPublicDTO(), 
-            token
-        };
+      // Inicia uma transação
+      transaction = await sequelize.transaction();
+
+      // Hash da senha antes de salvar
+      const senhaHash = await hashPassword(userDataInput.senha_hash);
+    
+      // Chama a Entity para criar o usuário
+      const novoUsuario = new UsuarioEntity({...userDataInput,senha_hash: senhaHash})
+    
+      //Persiste no Banco (Passando a transaction)
+      const resultModel = await this.UserRepository.createUser(
+        novoUsuario.toPersistence(), 
+        transaction
+      );
+      
+      // Atualiza o ID gerado pela base na entidade (se necessário para o token)
+      novoUsuario.id_usuario = resultModel.insertId;
+      
+      // Gera o token com os dados corretos
+      const { accessToken, refreshToken } = generateToken(novoUsuario.toPublicDTO());
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // token válido por 7 dias
+
+      // Salva o refresh token no banco
+      await this.UserRepository.salvarRefreshToken(
+        novoUsuario.id_usuario, 
+        refreshToken, 
+        expiresAt, 
+        transaction // Passa a transação para garantir atomicidade
+      );
+      
+      // Commita a transação
+      await transaction.commit();
+
+      return new AuthResponseDTO(novoUsuario.toPublicDTO(), accessToken, refreshToken);
     } catch (error) {
-      transaction.rollback();
+      if (transaction) await transaction.rollback();
       throw error;
     }
   }
@@ -92,8 +104,8 @@ class UserService {
       // 2. Gera o objeto público (snake_case: id_usuario, saldo_atual...)
       const userPublicData = entity.toPublicDTO(); 
 
-      // 3. Gera o par de tokens (acessToken JWT + refreshToken opaco)
-      const { acessToken, refreshToken } = generateToken(userPublicData);
+      // 3. Gera o par de tokens (accessToken JWT + refreshToken opaco)
+      const { accessToken, refreshToken } = generateToken(userPublicData);
 
       // Calcula o tempo de expiração do token (ex: 1 hora)
       const expiresAt = new Date();
@@ -103,10 +115,12 @@ class UserService {
       await this.UserRepository.salvarRefreshToken(userModel.idUsuario, refreshToken, expiresAt);
       
       // 4. Retorna DTO com os dados em snake_case
-      return new AuthResponseDTO(userPublicData, acessToken, refreshToken);
+      const authResponse = new AuthResponseDTO(userPublicData, accessToken, refreshToken);
+      console.log("Usuário logado:", authResponse);
+      return authResponse;
   }
 
-  async refreshAcessToken(oldRefreshToken) {
+  async refreshAccessToken(oldRefreshToken) {
     if (!oldRefreshToken) {
       throw new ErroBase("Refresh Token não fornecido.", 400, "BAD_REQUEST");
     }
@@ -129,7 +143,7 @@ class UserService {
     // Gera um novo par de tokens
     await this.UserRepository.revogarRefreshToken(oldRefreshToken);
 
-    const { acessToken, refreshToken: newRefreshToken } = generateToken(userPublicData);
+    const { accessToken, refreshToken: newRefreshToken } = generateToken(userPublicData);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // token válido por 7 dias
@@ -137,7 +151,7 @@ class UserService {
     await this.UserRepository.salvarRefreshToken(userModel.idUsuario, newRefreshToken, expiresAt);
 
     return {
-      acessToken,
+      accessToken,
       refreshToken: newRefreshToken
     };
   }

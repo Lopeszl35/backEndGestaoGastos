@@ -80,6 +80,7 @@ class UserRepository {
 
   async createUser(user, transaction) {
     try {
+      // Cria o usuário
       const novoUsuario = await UsuarioModel.create(user, { transaction });
       
       // Retorna formato compatível (DTO de Banco)

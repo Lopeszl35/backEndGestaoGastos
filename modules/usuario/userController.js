@@ -67,7 +67,7 @@ class UserController {
     try {
       const { refreshToken } = matchedData(req, { locations: ["body"] });
       
-      await this.UserService.logoutUser(refreshToken);
+      await this.UserService.logout(refreshToken);
       
       res.status(200).json({
         message: "Logout efetivado.",

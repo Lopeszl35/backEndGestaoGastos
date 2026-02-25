@@ -28,6 +28,14 @@ export default (userController) => {
     userController.logout(req, res, next);
   });
 
+  router.get("/userSaldo", verifyToken, validateGetUserSaldo, (req, res, next) => {
+    userController.getUserSaldo(req, res, next);
+  });
+
+  router.put("/userSaldo", verifyToken, validateUserSaldo, (req, res, next) => {
+    userController.atualizarUserSaldo(req, res, next);
+  });
+
   router.put("/atualizarUsuario/me", verifyToken, validateUpdateUser, (req, res, next) => {
     userController.atualizarUsuario(req, res, next);
   }
