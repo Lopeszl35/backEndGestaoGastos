@@ -1,7 +1,4 @@
 import jwt from 'jsonwebtoken';
-// ❌ REMOVIDO: import dotenv from 'dotenv'; dotenv.config();
-// A inicialização do .env DEVE estar na linha 1 do seu server.js.
-
 const secret = process.env.JWT_SECRET;
 
 // 🛡️ FAIL-FAST: Quebra a compilação do módulo se a infraestrutura estiver incorreta.

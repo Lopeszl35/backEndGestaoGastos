@@ -23,13 +23,10 @@ class UserController {
 
   async atualizarUsuario(req, res, next) {
     try {
-      const userId = req.userId;
+      const userId = req.userId; // O ID do usuário autenticado é extraído do token pelo middleware de autenticação
       const { user } = matchedData(req, { locations: ["body"] });
 
-      const result = await this.UserService.atualizarUsuario(
-        userId,
-        user
-      );
+      await this.UserService.atualizarUsuario(userId, user);
 
       res.status(200).json({
         message: "Usuário atualizado com sucesso",
@@ -52,7 +49,7 @@ class UserController {
 
   async refreshToken(req, res, next) {
     try {
-      const { refreshToken } = req.body; 
+      const { refreshToken } = matchedData(req, { locations: ["body"] }); 
       
       const tokens = await this.UserService.refreshAccessToken(refreshToken);
       
@@ -68,7 +65,7 @@ class UserController {
 
   async logout(req, res, next) {
     try {
-      const { refreshToken } = req.body;
+      const { refreshToken } = matchedData(req, { locations: ["body"] });
       
       await this.UserService.logoutUser(refreshToken);
       
@@ -94,6 +91,9 @@ class UserController {
     }
   }
 
+  /*
+  ❌ MÉTODO REMOVIDO: atualizarUserSaldo
+  TODO: Este métdo será transferido para o controller de receitas/gastos, pois o saldo do usuário deve ser manipulado indiretamente por meio de transações financeiras, e não diretamente por uma rota de usuário.
   async getUserSaldo(req, res, next) {
     const userId = req.userId;
     try {
@@ -106,9 +106,11 @@ class UserController {
       next(error);
     }
   }
+    */
 
   /*
   ❌ MÉTODO REMOVIDO: atualizarUserSaldo
+  // TODO: Este métdo será transferido para o controller de receitas/gastos, pois o saldo do usuário deve ser manipulado indiretamente por meio de transações financeiras, e não diretamente por uma rota de usuário.
   // O saldo deve ser alterado indiretamente por outras rotas de domínio financeiro 
   // (ex: adicionarGastos, registrarReceita, pagarFatura), 
   // que chamam os métodos de debitar/aumentarSaldo da UsuarioEntity internamente.

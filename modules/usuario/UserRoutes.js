@@ -4,11 +4,8 @@ import verifyToken from "../../middleware/verifyToken.js";
 import { authLimiter } from "../../middleware/authLimiter.js";
 import {
   validateCreateUser,
-  validateLoginUser,
-  validateGetUserSaldo,
-  validateUserSaldo,
   validateUpdateUser,
-  validateDeleteUser,
+  validateLoginUser,
 } from "./validateUsers.js";
 
 const router = express.Router();
@@ -31,24 +28,16 @@ export default (userController) => {
     userController.logout(req, res, next);
   });
 
-  router.get("/userSaldo", verifyToken, validateGetUserSaldo, (req, res, next) => {
-    userController.getUserSaldo(req, res, next);
-  });
-
-  router.put("/userSaldo", verifyToken, validateUserSaldo, (req, res, next) => {
-    userController.atualizarUserSaldo(req, res, next);
-  });
-
-  router.put("/atualizarUsuario/:userId", verifyToken, validateUpdateUser, (req, res, next) => {
+  router.put("/atualizarUsuario/me", verifyToken, validateUpdateUser, (req, res, next) => {
     userController.atualizarUsuario(req, res, next);
   }
   );
 
-  router.get("/userData/:userId", verifyToken, (req, res, next) => {
+  router.get("/userData/me", verifyToken, (req, res, next) => {
     userController.getUserData(req, res, next);
   });
 
-  router.delete("/deleteUser/:userId", verifyToken, validateDeleteUser, (req, res, next) => {
+  router.delete("/deleteUser/me", verifyToken, (req, res, next) => {
     userController.deleteUser(req, res, next);
   });
 

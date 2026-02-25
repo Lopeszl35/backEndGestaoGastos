@@ -9,6 +9,8 @@ function handleValidation(req, _res, next) {
 }
 
 export const validateCreateUser = [
+  body("user").isObject().withMessage("O campo 'user' deve ser um objeto contendo os dados do usuário."),
+
   body("user.nome")
     .trim()
     .exists({ checkFalsy: true })
@@ -23,13 +25,11 @@ export const validateCreateUser = [
     .exists({ checkFalsy: true })
     .withMessage("O email é obrigatório.")
     .isEmail()
+    .normalizeEmail()
     .withMessage("O email deve ser um endereço de email válido."),
 
   body("user.senha_hash")
     .trim()
-    .exists({ checkFalsy: true })
-    .withMessage("A senha é obrigatória.")
-    .withMessage("A senha deve ter pelo menos 6 caracteres.")
     .isStrongPassword()
     .withMessage(
       "A senha deve conter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma letra minúscula, um número e um caractere especial."
@@ -50,11 +50,6 @@ export const validateCreateUser = [
     .isFloat({ min: 0 })
     .withMessage("O saldo inicial deve ser um número positivo."),
 
-  body("user.saldo_atual")
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage("O saldo atual deve ser um número positivo."),
-
   handleValidation,
 ];
 
@@ -68,7 +63,8 @@ export const validateUpdateUser = [
     .optional()
     .trim()
     .isEmail()
-    .withMessage("O email deve ser válido."),
+    .withMessage("O email deve ser válido.")
+    .normalizeEmail(),
   body("user.senha")
     .optional()
     .trim()
@@ -83,16 +79,6 @@ export const validateUpdateUser = [
     .optional()
     .isFloat({ min: 0 })
     .withMessage("O salário mensal deve ser positivo."),
-
-  // NÃO EXISTE:
-  body("saldo_atual")
-    .not()
-    .exists()
-    .withMessage("saldo_atual não pode ser alterado por esta rota."),
-  body("saldo_inicial")
-    .not()
-    .exists()
-    .withMessage("saldo_inicial não pode ser alterado por esta rota."),
 
   handleValidation,
 ];
@@ -113,42 +99,3 @@ export const validateLoginUser = [
   handleValidation,
 ];
 
-export const validateGetUserSaldo = [
-  body("userId")
-    .trim()
-    .exists({ checkFalsy: true })
-    .withMessage("ID do usuário não fornecido")
-    .isInt()
-    .withMessage("ID do usuário deve ser um número inteiro."),
-
-  handleValidation,
-];
-
-export const validateUserSaldo = [
-  body("userId")
-    .trim()
-    .exists({ checkFalsy: true })
-    .withMessage("ID do usuário não fornecido")
-    .isInt()
-    .withMessage("ID do usuário deve ser um número inteiro."),
-
-  body("saldo")
-    .trim()
-    .exists({ checkFalsy: true })
-    .withMessage("Saldo não fornecido")
-    .isFloat()
-    .withMessage("Saldo deve ser um número válido."),
-
-  handleValidation,
-];
-
-export const validateDeleteUser = [
-  param("userId")
-    .trim()
-    .exists({ checkFalsy: true })
-    .withMessage("ID do usuário é obrigatório.")
-    .isInt()
-    .withMessage("ID do usuário deve ser um número inteiro."),
-
-  handleValidation,
-];
