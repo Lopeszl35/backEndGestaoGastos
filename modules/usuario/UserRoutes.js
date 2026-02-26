@@ -4,7 +4,6 @@ import verifyToken from "../../middleware/verifyToken.js";
 import { authLimiter } from "../../middleware/authLimiter.js";
 import {
   validateCreateUser,
-  validateLoginUser,
   validateUpdateUser,
   validateLoginUser,
 } from "./validateUsers.js";

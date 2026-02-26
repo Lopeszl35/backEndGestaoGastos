@@ -10,6 +10,14 @@ function handleValidation(req, _res, next) {
 
 export const validateCreateUser = [
   body("user").isObject().withMessage("O campo 'user' deve ser um objeto contendo os dados do usuário."),
+  body("user").custom((value) => {
+    const allowedFields = ["nome", "email", "senha_hash", "perfil_financeiro", "salario_mensal", "saldo_inicial"];
+    const extraFields = Object.keys(value).filter((key) => !allowedFields.includes(key));
+    if (extraFields.length > 0) {
+      throw new Error(`Campos inválidos: ${extraFields.join(", ")}`);
+    }
+    return true;
+  }),
 
   body("user.nome")
     .trim()
@@ -54,6 +62,15 @@ export const validateCreateUser = [
 ];
 
 export const validateUpdateUser = [
+  body("user").isObject().withMessage("O campo 'user' deve ser um objeto contendo os dados do usuário."),
+  body("user").custom((value) => {
+    const allowedFields = ["nome", "email", "senha", "perfil_financeiro", "salario_mensal"];
+    const extraFields = Object.keys(value).filter((key) => !allowedFields.includes(key));
+    if (extraFields.length > 0) {
+      throw new Error(`Campos inválidos: ${extraFields.join(", ")}`);
+    }
+    return true;
+  }),
   body("user.nome")
     .optional()
     .trim()
