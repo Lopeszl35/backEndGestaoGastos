@@ -1,49 +1,146 @@
-# 🏦 Konta API - Nexor Startup
+# 🏦 Konta API · Nexor Core Engine
 
-> **O motor financeiro de alta performance por trás do aplicativo Konta.** > Uma API RESTful focada em Segurança Ofensiva (Red Team), *Clean Architecture* e *Domain-Driven Design (DDD)*.
+> **Core Banking Engine proprietário da startup Konta**, responsável por orquestrar identidade, ledger financeiro de dupla entrada, crédito, investimentos e integração com mercado financeiro para evolução orientada por IA.
+>
+> **Author:** Rafael Amaro Lopes *(Founder / Tech Lead)*
 
-![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
-![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)
-![Sequelize](https://img.shields.io/badge/Sequelize-52B0E7?style=for-the-badge&logo=Sequelize&logoColor=white)
-![Security](https://img.shields.io/badge/Security-OWASP_Top_10-red?style=for-the-badge)
+![Node.js](https://img.shields.io/badge/Node.js-18%2B-43853D?style=for-the-badge&logo=node.js&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-API%20Layer-111111?style=for-the-badge&logo=express&logoColor=white)
+![Sequelize](https://img.shields.io/badge/Sequelize-ORM-52B0E7?style=for-the-badge&logo=sequelize&logoColor=white)
+![Security](https://img.shields.io/badge/Security-Red%20Team%20Mindset-B22222?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Proprietary-6A0DAD?style=for-the-badge)
 
-## 📖 Sobre o Projeto
+---
 
-O backend do aplicativo Konta não foi construído apenas para "fazer funcionar". Ele foi desenhado para ser um ecossistema **Production-Ready**, escalável e em conformidade com as exigências da Play Store e Apple Store. 
+## ⚖️ Aviso Legal (IP / Copyright)
 
-O sistema lida com o processamento de dupla entrada para gestão patrimonial, incluindo gastos, receitas, controle de faturas de cartão de crédito, investimentos e financiamentos, servindo como a fundação de dados para uma futura integração com Inteligência Artificial.
+> **SOFTWARE PROPRIETÁRIO — USO RESTRITO.**
+>
+> Copyright © 2025 **Rafael Amaro Lopes**. Todos os direitos reservados.
+>
+> Este repositório **não é open source**. Nenhuma parte deste código pode ser usada, copiada, modificada, distribuída, sublicenciada, publicada ou incorporada em outros sistemas sem **licença comercial prévia e expressa por escrito** do titular.
 
-## 🏗️ Decisões Arquiteturais e Segurança
+---
 
-A arquitetura afasta-se do acoplamento tradicional (Spaghetti Code) e adota um design defensivo rigoroso:
+## 🌐 Sobre a Plataforma
 
-* **Strict Whitelisting & Mass Assignment Prevention:** Controladores "burros" e validadores estritos (`express-validator`). O sistema desintegra silenciosamente qualquer payload malicioso não mapeado nos contratos da API.
-* **Mitigação de IDOR (Insecure Direct Object Reference):** A API não confia em parâmetros de URL para ações sensíveis. A identidade e a autorização são extraídas cirurgicamente do payload criptografado do Token JWT (*Single Source of Truth*).
-* **Token Rotation (OAuth 2.0 Patterns):** Implementação de *Access Tokens* efêmeros (15 minutos, Stateless) e *Refresh Tokens* opacos, armazenados no banco de dados e revogáveis, garantindo controle total de sessão e mitigação de roubos de credenciais.
-* **Conformidade LGPD & Soft Delete Paranoico:** Exclusões de contas preservam a integridade relacional do histórico financeiro usando *Soft Deletes* do Sequelize, acompanhados de um Mascaramento Destrutivo de PII (E-mail) para garantir o Direito ao Esquecimento.
-* **Atomicidade (ACID):** Operações financeiras complexas rodam sob estrito controle de transações (Rollbacks automáticos), prevenindo condições de corrida e "Silent Failures".
+A **Konta API - Nexor Core Engine** é o backend estratégico do aplicativo Konta e opera como um motor financeiro corporativo para **gestão patrimonial (Wealth Management)**.
 
-## 📦 Estrutura de Domínios (Modules)
+A plataforma foi desenhada para ambientes críticos de negócio, com foco em:
 
-O projeto segue a divisão por domínios, isolando regras de negócios da infraestrutura de rede:
+- Processamento transacional confiável para finanças pessoais e empresariais.
+- Regras financeiras robustas (dupla entrada, crédito, fechamento de faturas e amortização).
+- Integração com mercado financeiro (ativos tradicionais e criptoativos).
+- Base de dados consistente e pronta para trilhas avançadas de **Inteligência Artificial**.
 
-* `💳 /cartoes` - Gestão de faturas e lançamentos em cartões de crédito.
-* `🏷️ /categorias` - Classificação customizável de despesas e receitas.
-* `📊 /dashboard` - Orquestração de métricas e totalizadores financeiros.
-* `🏠 /financiamento` - Motor de cálculo e amortização de parcelas longas.
-* `💸 /gastos` & `gastos_fixos` - Núcleo de despesas dinâmicas e recorrentes.
-* `📈 /investimentos` - Acompanhamento de portfólio e rendimentos.
-* `🛒 /mercado` - Controle de listas e gastos em supermercados.
-* `👤 /usuario` - Identidade, *Data Transfer Objects (DTOs)* e autenticação.
+Em termos executivos, este backend não é um “CRUD de apoio”; é um **núcleo financeiro transacional**, orientado para segurança, rastreabilidade e evolução de produto em escala.
 
-## 🚀 Como Executar Localmente
+---
+
+## 🛡️ Engenharia e Segurança
+
+A engenharia do projeto segue princípios de arquitetura corporativa com separação estrita de responsabilidades e defesa em profundidade.
+
+### 1) Clean Architecture + Domain-Driven Design (DDD)
+
+- O domínio financeiro é tratado como centro do sistema.
+- Camadas de rede e persistência ficam desacopladas das regras de negócio.
+- Evolução de funcionalidades com menor risco de regressão e menor acoplamento estrutural.
+
+### 2) Segurança Ofensiva (Red Team Mindset)
+
+- **Strict Whitelisting** em entrada de dados.
+- Mitigação explícita de **Mass Assignment / Over-posting**.
+- Payloads mascarados, campos inesperados e tentativas de escalonamento de privilégio são neutralizados por contrato.
+
+### 3) Zero-Trust Identity (Mitigação de IDOR)
+
+- A API não confia cegamente em IDs vindos de URL para decisões sensíveis.
+- Identidade e contexto de autorização derivam de **claims criptografados no JWT**.
+- Redução drástica de risco de acesso indevido entre contas.
+
+### 4) Sessão de Alta Segurança (OAuth 2.0-like)
+
+- **Access Token efêmero (stateless)** para chamadas de baixa latência.
+- **Refresh Token opaco, persistido e revogável** no banco de dados.
+- Fluxo resiliente a roubo de sessão, com rotação/revogação controlada.
+
+### 5) Governança de Dados (LGPD by Design)
+
+- Estratégia de **Soft Delete paranoico** para preservar integridade referencial.
+- **Data Masking destrutivo de PII** para suportar direito ao esquecimento.
+- Preservação de consistncia transacional sem sacrificar compliance.
+
+---
+
+## 🧩 Ecossistema de Domínios
+
+Estrutura modular orientada a domínio:
+
+- 👤 **`/usuario`**: Identidade, autenticação, DTOs e ciclo de sessão segura.
+- 💸 **`/gastos`** & **`/gastos_fixos`**: Núcleo transacional de despesas, dupla entrada e recorrência.
+- 💳 **`/cartoes`**: Motor de faturas, limites e fechamento de cartão de crédito.
+- 🏠 **`/financiamento`**: Motor matemático para amortização e juros de longo prazo.
+- 📈 **`/investimentos`**: Gestão de carteira e alocação patrimonial.
+- 📊 **`/mercado`**: Integrações e monitoramento de operações de mercado (B3, criptoativos etc.).
+- 🏷️ **`/categorias`**: Classificação de dados para inteligência analítica e IA.
+- 📉 **`/dashboard`**: Consolidação de indicadores e totalizadores executivos.
+
+---
+
+## 🧪 Setup para Desenvolvedores Autorizados
+
+> Acesso permitido apenas para equipe interna e parceiros com autorização formal.
 
 ### Pré-requisitos
-* Node.js (v18+)
-* Banco de Dados MySQL ou MariaDB
 
-### Passo a Passo
+- Node.js 18+
+- MySQL ou MariaDB
+- npm
 
-1. **Clone o repositório:**
-   ```bash
-   git clone [https://github.com/seu-usuario/backendgestaogastos.git](https://github.com/seu-usuario/backendgestaogastos.git)
+### 1) Clonar o repositório
+
+```bash
+git clone <URL_PRIVADA_DO_REPOSITORIO>
+cd backEndGestaoGastos
+```
+
+### 2) Instalar dependências
+
+```bash
+npm install
+```
+
+### 3) Configurar variáveis de ambiente
+
+Crie um arquivo `.env` na raiz com as credenciais de banco e segredos de autenticação.
+
+Exemplo mínimo:
+
+```env
+PORT=3000
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=<database>
+DB_USER=<user>
+DB_PASSWORD=<password>
+JWT_SECRET=<chave_forte_e_privada>
+```
+
+### 4) Executar migrações
+
+```bash
+npx sequelize-cli db:migrate
+```
+
+### 5) Subir ambiente de desenvolvimento
+
+```bash
+npm run dev
+```
+
+---
+
+## 📌 Nota de Posicionamento Técnico
+
+Este repositório representa um ativo estratégico de engenharia: um motor financeiro orientado a segurança, coerência de domínio e escalabilidade de produto. Seu objetivo é sustentar operações críticas com padrões de software corporativo, e não um template genérico de API.
