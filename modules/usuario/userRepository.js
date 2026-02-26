@@ -156,7 +156,7 @@ class UserRepository {
   async getUserSaldo(userId) {
     try {
       const usuario = await UsuarioModel.findByPk(userId, {
-        attributes: ["saldoAtual"], // Otimização de rede: Traz apenas o campo necessário
+        attributes: ["saldoAtual"],
       });
       return usuario ? { saldo_atual: usuario.saldoAtual } : null;
     } catch (error) {

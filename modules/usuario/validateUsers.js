@@ -1,7 +1,6 @@
 import { body, param, validationResult } from "express-validator";
 import ErroValidacao from "../../errors/ValidationError.js";
 
-// helper para encerrar com erros padronizados
 function handleValidation(req, _res, next) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return next(new ErroValidacao(errors.array()));
@@ -9,7 +8,7 @@ function handleValidation(req, _res, next) {
 }
 
 export const validateCreateUser = [
-  body("user").isObject().withMessage("O campo 'user' deve ser um objeto contendo os dados do usuário."),
+  body("user").isObject().withMessage("O campo 'user' deve ser um objeto contendo os dados do usuário.").bail(), // Interrompe a validação se 'user' não for um objeto, evitando erros subsequentes
   body("user").custom((value) => {
     const allowedFields = ["nome", "email", "senha_hash", "perfil_financeiro", "salario_mensal", "saldo_inicial"];
     const extraFields = Object.keys(value).filter((key) => !allowedFields.includes(key));
@@ -46,7 +45,8 @@ export const validateCreateUser = [
   body("user.perfil_financeiro")
     .optional()
     .isString()
-    .withMessage("O perfil financeiro deve ser uma string."),
+    .isIn(["conservador", "moderado", "arrojado"])
+    .withMessage("O perfil financeiro deve ser uma string válida: conservador, moderado ou arrojado."),
 
   body("user.salario_mensal")
     .optional()
@@ -62,7 +62,7 @@ export const validateCreateUser = [
 ];
 
 export const validateUpdateUser = [
-  body("user").isObject().withMessage("O campo 'user' deve ser um objeto contendo os dados do usuário."),
+  body("user").isObject().withMessage("O campo 'user' deve ser um objeto contendo os dados do usuário.").bail(), // Interrompe a validação se 'user' não for um objeto, evitando erros subsequentes
   body("user").custom((value) => {
     const allowedFields = ["nome", "email", "senha", "perfil_financeiro", "salario_mensal"];
     const extraFields = Object.keys(value).filter((key) => !allowedFields.includes(key));

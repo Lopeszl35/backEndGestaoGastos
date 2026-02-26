@@ -116,7 +116,6 @@ class UserService {
       
       // 4. Retorna DTO com os dados em snake_case
       const authResponse = new AuthResponseDTO(userPublicData, accessToken, refreshToken);
-      console.log("Usuário logado:", authResponse);
       return authResponse;
   }
 
@@ -170,7 +169,6 @@ class UserService {
         throw new NaoEncontrado("Usuário não encontrado");
       }
       const saldo = await this.UserRepository.getUserSaldo(userId);
-      console.log("Saldo atual do usuário:", saldo);
       return saldo;
   }
 

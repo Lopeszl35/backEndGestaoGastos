@@ -95,7 +95,7 @@ export class UsuarioEntity {
     };
   }
   
-// Método para exportar dados para o Repository salvar (camelCase)
+// Método para exportar dados para o Repository salvar 
   toPersistence() {
     return {
       idUsuario: this.id_usuario,
@@ -109,7 +109,7 @@ export class UsuarioEntity {
     };
   }
 
-  // Para o Frontend (Snake_Case) - "saldo_atual"
+  // Para o Frontend
   toPublicDTO() {
     return {
       id_usuario: this.id_usuario,
