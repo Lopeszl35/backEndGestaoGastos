@@ -1,3 +1,6 @@
+import { matchedData } from "express-validator";
+
+
 class CategoriasController {
   constructor(CategoriasService, TransactionUtil) {
     this.CategoriasService = CategoriasService;
@@ -6,8 +9,8 @@ class CategoriasController {
 
   async createCategorias(req, res, next) {
     try {
-      const { id_usuario } = req.params;
-      const categoria = req.body.categoria;
+      const id_usuario = req.userId;;
+      const categoria = matchedData(req, { locations: ["body"] }).categoria;
       
       const result = await this.TransactionUtil.executeTransaction(
         async (connection) => {
@@ -20,19 +23,20 @@ class CategoriasController {
       );
       res.status(201).json(result);
     } catch (error) {
-      console.error("Erro ao criar categoria:", error.message);
       next(error);
     }
   }
 
   async updateCategoria(req, res, next) {
-    const { id_categoria } = req.query;
-    const categoria = req.body.categoria;
+    const id_usuario = req.userId;
+    const { id_categoria } = req.params;
+    const categoria = matchedData(req, { locations: ["body"] }).categoria;
     try {
       const result = await this.TransactionUtil.executeTransaction(
         async (connection) => {
           return await this.CategoriasService.updateCategoria(
             id_categoria,
+            id_usuario,
             categoria,
             connection
           );
@@ -45,7 +49,8 @@ class CategoriasController {
   }
 
   async deleteCategoria(req, res, next) {
-    const { id_categoria } = req.query;
+    const id_usuario = req.userId;
+    const { id_categoria } = req.params;
     const dataAtual = new Date();
     
     try {
@@ -53,6 +58,7 @@ class CategoriasController {
         async (connection) => {
           return await this.CategoriasService.deleteCategoria(
             id_categoria,
+            id_usuario,
             dataAtual,
             connection
           );
@@ -68,7 +74,7 @@ class CategoriasController {
   }
 
   async getCategoriasAtivas(req, res, next) {
-    const { id_usuario } = req.params;
+    const id_usuario = req.userId;
 
     try {
       const result = await this.CategoriasService.getCategoriasAtivas(Number(id_usuario));
@@ -79,7 +85,7 @@ class CategoriasController {
   }
 
   async getCategoriasInativas(req, res, next) {
-    const { id_usuario } = req.params;
+    const id_usuario = req.userId;
     try {
       const result = await this.CategoriasService.getCategoriasInativas(id_usuario);
       res.status(200).json(result);
@@ -90,7 +96,7 @@ class CategoriasController {
 
   async reativarCategoria(req, res, next) {
     const { id_categoria } = req.params;
-    const { id_usuario } = req.query; // Verifique se isso vem da query ou body/token
+    const id_usuario = req.userId;
 
     try {
       const result = await this.TransactionUtil.executeTransaction(
@@ -102,7 +108,6 @@ class CategoriasController {
           );
         }
       );
-      console.log("result: ", result);
       res.status(200).json({
         message: "Categoria reativada com sucesso",
         status: 200,

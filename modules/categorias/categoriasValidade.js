@@ -21,7 +21,15 @@ export function normalizarNomeCategoria(nome) {
 
 export const validateCreateCategoria = [
     body("categoria").exists().withMessage("Objeto categoria obrigatório")
-    .isObject().withMessage("categoria deve ser um objeto válido."),
+    .isObject().withMessage("categoria deve ser um objeto válido.").bail(), // Interrompe a validação se 'categoria' não for um objeto, evitando erros subsequentes
+    body("categoria").custom((value) => {
+        const allowedFields = ["nome", "limite"];
+        const extraFields = Object.keys(value).filter((key) => !allowedFields.includes(key));
+        if (extraFields.length > 0) {
+            throw new Error(`Campos inválidos: ${extraFields.join(", ")}`);
+        }
+        return true;
+    }),
 
     body("categoria.nome").trim()
     .exists().withMessage("Nome da categoria obrigatório")
@@ -53,7 +61,7 @@ export const validateGetCategorias = [
 ];
 
 export const validateDeleteCategoria = [
-    query('id_categoria').exists().withMessage('Id da categoria obrigatório')
+    param('id_categoria').exists().withMessage('Id da categoria obrigatório')
     .isInt({ gt: 0 }).withMessage('Id da categoria deve ser um número inteiro positivo.')
     .notEmpty().withMessage('Id da categoria não pode ser vazio.'),
 
@@ -61,12 +69,21 @@ export const validateDeleteCategoria = [
 ]
 
 export const validateUpdateCategoria = [
-    query('id_categoria').exists().withMessage('Id da categoria obrigatório')
+    param('id_categoria').exists().withMessage('Id da categoria obrigatório')
     .isInt({ gt: 0 }).withMessage('Id da categoria deve ser um número inteiro positivo.')
     .notEmpty().withMessage('Id da categoria não pode ser vazio.'),
 
     body('categoria').exists().withMessage('Objeto categoria obrigatório')
-    .isObject().withMessage('categoria deve ser um objeto valido.'),
+    .isObject().withMessage('categoria deve ser um objeto valido.').bail(), // Interrompe a validação se 'categoria' não for um objeto, evitando erros subsequentes
+
+    body('categoria').custom((value) => {
+        const allowedFields = ['nome', 'limite'];
+        const extraFields = Object.keys(value).filter((key) => !allowedFields.includes(key));
+        if (extraFields.length > 0) {
+            throw new Error(`Campos inválidos: ${extraFields.join(", ")}`);
+        }
+        return true;
+    }),
 
     handleValidation
 ]

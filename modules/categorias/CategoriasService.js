@@ -7,13 +7,8 @@ export default class CategoriasService {
   }
 
   async createCategoria(categoria, id_usuario, connection) {
-    console.log("CategoriasService.createCategoria chamado com:", {
-      categoria,
-      id_usuario,
-    });
     try {
       const nomeNormalizado = normalizarNomeCategoria(categoria.nome);
-      console.log("nomeNormalizado: ", nomeNormalizado);
       
       const categoriaExists = await this.CategoriasRepository.checkCategoriaExists(
         nomeNormalizado,
@@ -29,13 +24,14 @@ export default class CategoriasService {
       
       // Passamos o nome normalizado e a transação (connection)
       const result = await this.CategoriasRepository.createCategoria(
-        { ...categoria, nome: nomeNormalizado },
+        categoria,
+        nomeNormalizado,
         id_usuario,
         connection
       );
       return result;
     } catch (error) {
-      console.log("Erro ao criar categoria no Service:", error.message);
+      console.error("Erro ao criar categoria no Service:", error.message);
       throw error;
     }
   }
@@ -45,16 +41,17 @@ export default class CategoriasService {
       const result = await this.CategoriasRepository.getCategoriasAtivas(id_usuario);
       return result;
     } catch (error) {
-      console.log("Erro ao buscar categorias no service:", error.message);
+      console.error("Erro ao buscar categorias no service:", error.message);
       throw error;
     }
   }
 
-  async updateCategoria(id_categoria, categoria, connection) {
+  async updateCategoria(id_categoria, id_usuario, categoria, connection) {
     try {
       // Opcional: Validar se existe antes ou se o nome novo já existe
       const result = await this.CategoriasRepository.updateCategoria(
         id_categoria,
+        id_usuario,
         categoria,
         connection
       );
@@ -67,21 +64,22 @@ export default class CategoriasService {
 
       return result;
     } catch (error) {
-      console.log("Erro ao atualizar categoria no service:", error.message);
+      console.error("Erro ao atualizar categoria no service:", error.message);
       throw error;
     }
   }
 
-  async deleteCategoria(id_categoria, dataAtual, connection) {
+  async deleteCategoria(id_categoria, id_usuario, dataAtual, connection) {
     try {
       const result = await this.CategoriasRepository.deleteCategoria(
         id_categoria,
+        id_usuario,
         dataAtual,
         connection
       );
       return result;
     } catch (error) {
-      console.log("Erro ao deletar categoria no service:", error.message);
+      console.error("Erro ao deletar categoria no service:", error.message);
       throw error;
     }
   }
@@ -91,7 +89,7 @@ export default class CategoriasService {
       const result = await this.CategoriasRepository.getCategoriasInativas(id_usuario);
       return result;
     } catch (error) {
-      console.log("Erro ao buscar categorias inativas no service:", error.message);
+      console.error("Erro ao buscar categorias inativas no service:", error.message);
       throw error;
     }
   }
@@ -105,7 +103,7 @@ export default class CategoriasService {
       );
       return result;
     } catch (error) {
-      console.log("Erro ao reativar categoria no service:", error.message);
+      console.error("Erro ao reativar categoria no service:", error.message);
       throw error;
     }
   }

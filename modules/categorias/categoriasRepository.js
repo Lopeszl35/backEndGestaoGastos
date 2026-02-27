@@ -6,12 +6,14 @@ import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
 export default class CategoriasRepository {
   constructor() {}
 
-  async createCategoria(categoria, id_usuario, transaction) {
+  // TODO: "Refatorar para método no repository não retornar mensagens de sucesso/falha, apenas dados puros ou lançar erros. A lógica de mensagens deve ficar na camada de serviço ou controller."
+  async createCategoria(categoria, nomeNormalizado, id_usuario, transaction) {
     try {
       const novaCategoria = await CategoriasModel.create(
         {
           idUsuario: id_usuario,
           nome: categoria.nome,
+          nome_normalizado: nomeNormalizado,
           limite: categoria.limite,
           ativo: true,
         },
@@ -93,8 +95,7 @@ export default class CategoriasRepository {
     }
   }
 
-  async updateCategoria(id_categoria, categoria, transaction) {
-    console.log("dados para updateCategoria no Repository:", id_categoria, categoria);
+  async updateCategoria(id_categoria, id_usuario, categoria, transaction) {
     try {
       const [affectedRows] = await CategoriasModel.update(
         {
@@ -102,7 +103,7 @@ export default class CategoriasRepository {
           limite: categoria.limite,
         },
         {
-          where: { idCategoria: id_categoria },
+          where: { idCategoria: id_categoria, idUsuario: id_usuario },
           transaction,
         }
       );
@@ -113,7 +114,7 @@ export default class CategoriasRepository {
     }
   }
 
-  async deleteCategoria(id_categoria, dataAtual, transaction) {
+  async deleteCategoria(id_categoria, id_usuario, dataAtual, transaction) {
     try {
       // Soft Delete manual conforme lógica original
       const [affectedRows] = await CategoriasModel.update(
@@ -122,7 +123,7 @@ export default class CategoriasRepository {
           inativadoEm: dataAtual,
         },
         {
-          where: { idCategoria: id_categoria },
+          where: { idCategoria: id_categoria, idUsuario: id_usuario },
           transaction,
         }
       );
@@ -133,25 +134,22 @@ export default class CategoriasRepository {
     }
   }
 
-  async getCategoriasInativas(id_usuario) {
-    console.log("idUsuario: ", id_usuario);
+  async getCategoriasInativas(idUsuario) {
     try {
       const categorias = await CategoriasModel.findAll({
         where: {
-          id_usuario: id_usuario,
+          idUsuario: idUsuario,
           ativo: false,
         },
         raw: true, // Retorna objeto simples igual o driver mysql fazia
       });
       return categorias;
     } catch (error) {
-      console.error("Erro no CategoriasRepository.getCategoriasInativas:", error.message);
       ErroSqlHandler.tratarErroSql(error);
     }
   }
 
   async reativarCategoria(id_categoria, id_usuario, transaction) {
-    console.log("idUsuario e idCategoria: ", id_categoria, id_usuario);
     try {
       const [affectedRows] = await CategoriasModel.update(
         { ativo: true },

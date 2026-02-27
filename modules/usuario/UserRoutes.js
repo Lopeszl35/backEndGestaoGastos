@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 import verifyToken from "../../middleware/verifyToken.js";
 import { authLimiter } from "../../middleware/authLimiter.js";
 import {
@@ -9,7 +8,6 @@ import {
 } from "./validateUsers.js";
 
 const router = express.Router();
-router.use(cors());
 
 export default (userController) => {
   router.post("/createUser", validateCreateUser, (req, res, next) => {
@@ -28,6 +26,8 @@ export default (userController) => {
     userController.logout(req, res, next);
   });
 
+  TODO: "Mover rotas de saldo para o modulo de receitas, rotas de usuário devem ser apenas para dados do usuário, autenticação e gerenciamento de conta";
+  /*
   router.get("/userSaldo", verifyToken, (req, res, next) => {
     userController.getUserSaldo(req, res, next);
   });
@@ -35,6 +35,7 @@ export default (userController) => {
   router.put("/userSaldo", verifyToken, (req, res, next) => {
     userController.atualizarUserSaldo(req, res, next);
   });
+  */
 
   router.put("/atualizarUsuario/me", verifyToken, validateUpdateUser, (req, res, next) => {
     userController.atualizarUsuario(req, res, next);

@@ -127,8 +127,6 @@ export default async ({ database }) => {
   const { default: FinanciamentosController } = await import("../modules/financiamento/FinanciamentosController.js");
   const { CartoesController } = await import("../modules/cartoes/CartoesController.js");
   const { default: DashboardController } = await import("../modules/dashboard/DashboardController.js");
-  
-  // Novos Controllers
   const { default: MercadoController } = await import("../modules/mercado/MercadoController.js");
   const { default: InvestimentosController } = await import("../modules/investimentos/InvestimentosController.js");
 
