@@ -1,5 +1,5 @@
 import RequisicaoIncorreta from "../../errors/RequisicaoIncorreta.js";
-import { normalizarNomeCategoria } from "./categoriasValidade.js";
+import { normalizarNomeCategoria } from "./categoriasValidate.js";
 
 export default class CategoriasService {
   constructor(CategoriasRepository) {
@@ -36,9 +36,9 @@ export default class CategoriasService {
     }
   }
 
-  async getCategoriasAtivas(id_usuario) {
+  async getCategoriasAtivas(id_usuario, ano, mes) {
     try {
-      const result = await this.CategoriasRepository.getCategoriasAtivas(id_usuario);
+      const result = await this.CategoriasRepository.getCategoriasAtivas(id_usuario, ano, mes);
       return result;
     } catch (error) {
       console.error("Erro ao buscar categorias no service:", error.message);

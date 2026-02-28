@@ -75,9 +75,11 @@ class CategoriasController {
 
   async getCategoriasAtivas(req, res, next) {
     const id_usuario = req.userId;
+    const ano = req.query.ano ? Number(req.query.ano) : null;
+    const mes = req.query.mes ? Number(req.query.mes) : null;
 
     try {
-      const result = await this.CategoriasService.getCategoriasAtivas(Number(id_usuario));
+      const result = await this.CategoriasService.getCategoriasAtivas(id_usuario, ano, mes);
       res.status(200).json(result);
     } catch (error) {
       next(error);

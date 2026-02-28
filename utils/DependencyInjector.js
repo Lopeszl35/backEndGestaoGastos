@@ -9,7 +9,7 @@ class DependencyInjector {
 
     get(name) {
         if (!this.dependencies[name]) {
-            throw new Error(`Dependência ${name} nao encontrada`);
+            throw new Error(`Dependência ${name} não encontrada`);
         }
 
         return this.dependencies[name];

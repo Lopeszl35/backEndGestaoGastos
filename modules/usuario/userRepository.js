@@ -1,16 +1,15 @@
-import { UsuarioModel, RefreshTokenModel } from "../../database/models/index.js";
-import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
-import { sequelize } from "../../database/sequelize.js";
-
 class UserRepository {
+  constructor(database) {
+    this.usuarioModel = database.UsuarioModel;
+    this.refreshTokenModel = database.RefreshTokenModel;
+  }
 
   // ==========================================
   // 🛡️ GESTÃO DE SESSÕES (REFRESH TOKENS)
   // ==========================================
 
   async salvarRefreshToken(idUsuario, token, expiresAt, transaction = null) {
-    try {
-      await RefreshTokenModel.create(
+      await this.refreshTokenModel.create(
         {
         token,
         id_usuario: idUsuario,
@@ -19,37 +18,23 @@ class UserRepository {
       },
       { transaction }
     );
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   async buscarRefreshToken(tokenString) {
-    try {
-      const tokenRecord = await RefreshTokenModel.findOne(
+      const tokenRecord = await this.refreshTokenModel.findOne(
         {
           where: { token: tokenString }
         }
       );
       return tokenRecord ? tokenRecord.toJSON() : null;
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   async revogarRefreshToken(tokenString) {
-    try {
-      const [ linhasAfetadas ] = await RefreshTokenModel.update(
+      const [ linhasAfetadas ] = await this.refreshTokenModel.update(
         { revoked: true },
         { where: { token: tokenString } }
       );
       return linhasAfetadas; // Retorna o número de tokens revogados (0 ou 1)
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
   
   // ==========================================
@@ -57,10 +42,9 @@ class UserRepository {
   // ==========================================
 
   async diminuirSaldoAtual({ id_usuario, valor, connection }) {
-    try {
       // 🛡️ DEFENSIVE PROGRAMMING + PERFORMANCE: Operação Atômica (Execute-in-Place).
       // Instruímos o MySQL a subtrair o valor diretamente no disco.
-      const [linhasAfetadas] = await UsuarioModel.decrement("saldoAtual", { 
+      const [linhasAfetadas] = await this.usuarioModel.decrement("saldoAtual", { 
         by: valor, 
         where: { idUsuario: id_usuario },
         transaction: connection 
@@ -72,52 +56,33 @@ class UserRepository {
         : linhasAfetadas;
       
       return { affectedRows: affectedRows || 0 };
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   async createUser(user, transaction) {
-    try {
       // Cria o usuário
-      const novoUsuario = await UsuarioModel.create(user, { transaction });
+      const novoUsuario = await this.usuarioModel.create(user, { transaction });
       
       // Retorna formato compatível (DTO de Banco)
       return { 
         insertId: novoUsuario.idUsuario, 
         result: novoUsuario.toJSON() 
       };
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error; 
-    }
   }
 
   async atualizarUsuario(idUsuario, dadosParaAtualizacao, transaction = null) {
-    try {
-      const [linhasAfetadas] = await UsuarioModel.update(dadosParaAtualizacao, {
+      const [linhasAfetadas] = await this.usuarioModel.update(dadosParaAtualizacao, {
         where: { idUsuario },
         transaction
       });
       return { affectedRows: linhasAfetadas };
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   async atualizarUserSaldo(userId, novoSaldo) {
-    try {
-      const [linhasAfetadas] = await UsuarioModel.update(
+      const [linhasAfetadas] = await this.usuarioModel.update(
         { saldoAtual: novoSaldo },
         { where: { idUsuario: userId } }
       );
       return { affectedRows: linhasAfetadas };
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   // ==========================================
@@ -125,7 +90,6 @@ class UserRepository {
   // ==========================================
 
   async getUserById(userId, transaction = null, lock = false) {
-    try {
       const options = { transaction };
       
       // 🛡️ BLINDAGEM (Null Safety): Garante que o Lock não estoure um erro fatal de V8 Engine.
@@ -135,40 +99,26 @@ class UserRepository {
         options.lock = transaction.LOCK.UPDATE;
       }
 
-      const userData = await UsuarioModel.findByPk(userId, options);
+      const userData = await this.usuarioModel.findByPk(userId, options);
       return userData ? userData.toJSON() : null;
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error; 
-    }
   }
 
   async getUserByEmail(email) {
-    try {
-      const userData = await UsuarioModel.findOne({ where: { email } });
+      const userData = await this.usuarioModel.findOne({ where: { email } });
       return userData ? userData.toJSON() : null;
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   async getUserSaldo(userId) {
-    try {
-      const usuario = await UsuarioModel.findByPk(userId, {
+      const usuario = await this.usuarioModel.findByPk(userId, {
         attributes: ["saldoAtual"],
       });
       return usuario ? { saldo_atual: usuario.saldoAtual } : null;
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   async deleteUser(userId) {
-    const transaction = await UsuarioModel.sequelize.transaction();
+    const transaction = await this.usuarioModel.sequelize.transaction();
     try {
-      const usuario = await UsuarioModel.findByPk(userId, { transaction });
+      const usuario = await this.usuarioModel.findByPk(userId, { transaction });
       if (!usuario) {
         await transaction.rollback();
         return { affectedRows: 0 }; // O serviço avaliará e lançará o NaoEncontrado
@@ -186,7 +136,6 @@ class UserRepository {
       return { affectedRows: 1 };
     } catch (error) {
       await transaction.rollback();
-      ErroSqlHandler.tratarErroSql(error);
       throw error;
     }
   }
