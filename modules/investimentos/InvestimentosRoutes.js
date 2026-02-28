@@ -1,5 +1,5 @@
 import { Router } from "express";
-// Importe seu middleware de validação aqui se tiver criado (InvestimentosValidate.js)
+
 
 export default (Controller) => {
   const router = Router();

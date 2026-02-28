@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import verifyToken from '../../middleware/verifyToken.js';
 import { 
     validateGetLimiteGastoMes,
@@ -9,9 +8,6 @@ import {
 } from './GastoMesValidate.js';
 
 const router = express.Router();
-
-
-router.use(cors());
 
 export default (gastoMesController) => {
 

@@ -1,9 +1,7 @@
 import express from "express";
-import cors from "cors";
 import { validateGetResumoGastosFixos, validateAddGastoFixo, validateGetGastosFixos, validateToggleGastoFixoAtivo } from "./GastosFixosValidate.js";
 
 const router = express.Router();
-router.use(cors());
 
 export default (gastosFixosController) => {
   // Resumo para a tela (cards)
