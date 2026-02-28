@@ -34,18 +34,6 @@ CategoriasModel.init(
       allowNull: false,
       defaultValue: true,
     },
-    dataCriacao: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-      field: "data_criacao",
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-      field: "updated_at",
-    },
     inativadoEm: {
       type: DataTypes.DATE,
       allowNull: true,
@@ -56,7 +44,7 @@ CategoriasModel.init(
     sequelize,
     tableName: "categorias_gastos", 
     timestamps: true, 
-    createdAt: "dataCriacao",
-    updatedAt: "updatedAt",   
+    createdAt: "data_criacao",
+    updatedAt: "updated_at",   
   }
 );

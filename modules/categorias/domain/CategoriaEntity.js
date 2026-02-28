@@ -1,4 +1,5 @@
 import ValidationError from "../../../errors/ValidationError.js";
+import { normalizarNomeCategoria } from "../categoriasValidate.js";
 
 export class CategoriaEntity {
   constructor({
@@ -22,8 +23,9 @@ export class CategoriaEntity {
     this.limite = limite ? Number(limite) : null;
     this.ativo = ativo !== undefined ? ativo : true;
     
-    // Normalização automática para buscas (snake_case no banco)
-    this.nome_normalizado = nomeNormalizado || nome_normalizado || this.nome.trim().toLowerCase();
+    // a Entidade usa a exata mesma matemática de 
+    // normalização (remoção de acentos/NFD) que o resto do sistema. Assim garantimos que o nome normalizado seja sempre consistente, independente de onde venha a categoria (criação, atualização, banco, etc).
+    this.nome_normalizado = nomeNormalizado || nome_normalizado || normalizarNomeCategoria(this.nome);
     
     this.data_criacao = data_criacao || dataCriacao;
     this.inativado_em = inativado_em || inativadoEm;

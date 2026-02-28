@@ -1,5 +1,6 @@
 import RequisicaoIncorreta from "../../errors/RequisicaoIncorreta.js";
-import { normalizarNomeCategoria } from "./categoriasValidate.js";
+import NaoEncontrado from "../../errors/naoEncontrado.js"; // 🛡️ Corrigido o erro de importação ausente
+import { CategoriaEntity } from "./domain/CategoriaEntity.js"; // 🛡️ Importando o Core do Domínio
 
 export default class CategoriasService {
   constructor(CategoriasRepository) {
@@ -7,27 +8,34 @@ export default class CategoriasService {
   }
 
   async createCategoria(categoria, id_usuario, connection) {
-      const nomeNormalizado = normalizarNomeCategoria(categoria.nome);
+      // 🛡️ RICH DOMAIN: A Entidade é o "Segurança da Boate". 
+      // Ao instanciar, ela automaticamente roda o #validarNome e gera o nome_normalizado.
+      const categoriaEntity = new CategoriaEntity({
+        ...categoria,
+        id_usuario
+      });
       
+      // Usamos a propriedade garantida pela Entidade
       const categoriaExists = await this.CategoriasRepository.checkCategoriaExists(
-        nomeNormalizado,
-        id_usuario,
+        categoriaEntity.nome_normalizado,
+        categoriaEntity.id_usuario,
         connection
       );
 
       if (categoriaExists) {
         throw new RequisicaoIncorreta(
-          `A categoria com nome '${categoria.nome}' já existe para este usuário.`
+          `A categoria com nome '${categoriaEntity.nome}' já existe para este usuário.`
         );
       }
       
-      // Passamos o nome normalizado e a transação (connection)
+      // Entregamos a entidade hidratada e blindada para o repositório
       const result = await this.CategoriasRepository.createCategoria(
-        categoria,
-        nomeNormalizado,
-        id_usuario,
+        categoriaEntity, // O repositório vai ler .nome e .limite daqui
+        categoriaEntity.nome_normalizado,
+        categoriaEntity.id_usuario,
         connection
       );
+      
       return result;
   }
 
@@ -37,11 +45,18 @@ export default class CategoriasService {
   }
 
   async updateCategoria(id_categoria, id_usuario, categoria, connection) {
-      // Opcional: Validar se existe antes ou se o nome novo já existe
-      const result = await this.CategoriasRepository.updateCategoria(
+      // 🛡️ RICH DOMAIN: Passamos pela Entidade para garantir que não tentem 
+      // atualizar um nome com menos de 2 caracteres, por exemplo.
+      const categoriaEntity = new CategoriaEntity({
+        ...categoria,
         id_categoria,
-        id_usuario,
-        categoria,
+        id_usuario
+      });
+
+      const result = await this.CategoriasRepository.updateCategoria(
+        categoriaEntity.id_categoria,
+        categoriaEntity.id_usuario,
+        categoriaEntity, 
         connection
       );
 
