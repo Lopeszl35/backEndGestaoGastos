@@ -7,7 +7,6 @@ export default class CategoriasRepository {
     this.CategoriasModel = database.CategoriasModel;
   }
 
-  // TODO: "Refatorar para método no repository não retornar mensagens de sucesso/falha, apenas dados puros ou lançar erros. A lógica de mensagens deve ficar na camada de serviço ou controller."
   async createCategoria(categoria, nomeNormalizado, id_usuario, transaction) {
       const novaCategoria = await this.CategoriasModel.create(
         {
@@ -20,17 +19,7 @@ export default class CategoriasRepository {
         { transaction }
       );
 
-      if (novaCategoria) {
-        return {
-          mensagem: "Categoria criada com sucesso.",
-          id_categoria: novaCategoria.idCategoria,
-        };
-      } else {
-        return {
-          mensagem: "Falha ao criar categoria.",
-          code: "FALHA_CRIACAO_CATEGORIA",
-        };
-      }
+      return novaCategoria.toJSON();
   }
 
   async checkCategoriaExists(nomeCategoria, id_usuario, transaction) {

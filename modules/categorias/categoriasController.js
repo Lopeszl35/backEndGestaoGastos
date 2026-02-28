@@ -21,7 +21,11 @@ class CategoriasController {
           );
         }
       );
-      res.status(201).json(result);
+      res.status(201).json({
+        message: "Categoria criada com sucesso",
+        status: 201,
+        data: result
+      });
     } catch (error) {
       next(error);
     }
