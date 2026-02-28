@@ -34,6 +34,7 @@ export const validateCreateCategoria = [
     body("categoria.nome").trim()
     .exists().withMessage("Nome da categoria obrigatório")
     .isString().withMessage("Nome da categoria deve ser uma string.")
+    .isLength({ min: 2, max: 100 }).withMessage("Nome da categoria deve ter pelo menos 2 caracteres e no máximo 100.")
     .notEmpty().withMessage("Nome da categoria não pode ser vazio."),
 
     body("categoria.limite")

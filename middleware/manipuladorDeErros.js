@@ -13,6 +13,11 @@ export default function manipuladorDeErros(err, req, res, next) {
         });
     } 
 
+    if (process.env.NODE_ENV === "development") {
+      console.error("🚨 [LOG DE DESENVOLVEDOR] Erro capturado na rota:", req.originalUrl);
+      console.error("🚨 [LOG DE DESENVOLVEDOR] Erro capturado:", err.parent || err.original || err); // Mostra o erro original do banco, se houver
+    }
+
    // 2) Erros do Sequelize: validação de modelo (NOT NULL, validations etc.)
   // Ex: SequelizeValidationError (como o nomeNorm/bandeiraNorm/ultimos4Norm)
   if (err?.name === "SequelizeValidationError") {
