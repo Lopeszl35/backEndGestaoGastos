@@ -10,7 +10,7 @@ function handleValidation(req, _res, next) {
 export const validateCreateUser = [
   body("user").isObject().withMessage("O campo 'user' deve ser um objeto contendo os dados do usuário.").bail(), // Interrompe a validação se 'user' não for um objeto, evitando erros subsequentes
   body("user").custom((value) => {
-    const allowedFields = ["nome", "email", "senha_hash", "perfil_financeiro", "salario_mensal", "saldo_inicial"];
+    const allowedFields = ["nome", "email", "senha", "perfil_financeiro", "salario_mensal", "saldo_inicial"];
     const extraFields = Object.keys(value).filter((key) => !allowedFields.includes(key));
     if (extraFields.length > 0) {
       throw new Error(`Campos inválidos: ${extraFields.join(", ")}`);
@@ -35,7 +35,7 @@ export const validateCreateUser = [
     .normalizeEmail()
     .withMessage("O email deve ser um endereço de email válido."),
 
-  body("user.senha_hash")
+  body("user.senha")
     .trim()
     .isStrongPassword()
     .withMessage(

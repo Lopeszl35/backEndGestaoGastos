@@ -21,10 +21,10 @@ class UserService {
       transaction = await sequelize.transaction();
 
       // Hash da senha antes de salvar
-      const senhaHash = await hashPassword(userDataInput.senha_hash);
+      const senhaHash = await hashPassword(userDataInput.senha);
     
       // Chama a Entity para criar o usuário
-      const novoUsuario = new UsuarioEntity({...userDataInput,senha_hash: senhaHash})
+      const novoUsuario = new UsuarioEntity({...userDataInput,senha: senhaHash})
     
       //Persiste no Banco (Passando a transaction)
       const resultModel = await this.UserRepository.createUser(
@@ -163,6 +163,7 @@ class UserService {
     return { message: "Logout realizado com sucesso." };
   }
 
+  // TODO: Mover método para receitas, métodos de saldo devem ficar em serviços específicos, não no UserService
   async getUserSaldo(userId) {
       const userExists = await this.getUser(userId); // Verifica se o usuário existe, lança erro se não existir
       if (!userExists) {
@@ -172,6 +173,7 @@ class UserService {
       return saldo;
   }
 
+  // TODO: Mover método para receitas, métodos de saldo devem ficar em serviços específicos, não no UserService
   async atualizarUserSaldo(userId, novoSaldo) {
       const novoSaldoAtualizado = await this.UserRepository.atualizarUserSaldo(
         userId,
@@ -180,6 +182,7 @@ class UserService {
       return novoSaldoAtualizado;
   }
 
+  // TODO: Mover método para receitas, métodos de saldo devem ficar em serviços específicos, não no UserService
   async diminuirSaldoAtualAposPagarFaturaCartao({ id_usuario, valor, connection }) {
       // 1. Busca com LOCK
       const userModel = await this.UserRepository.getUserById(id_usuario, connection, true);
@@ -200,26 +203,14 @@ class UserService {
       
       return { mensagem: "Saldo atualizado com sucesso." };
   }
-
+  
   async getUser(userId) {
       const userData = await this.UserRepository.getUserById(userId);
+      const entity = new UsuarioEntity(userData);
       // Mapeamento reverso (Model -> DTO) se necessário
-      return userData ? this._mapToDTO(userData) : null;
+      return userData ? entity.toPublicDTO() : null;
   }
 
-  // Helper privado para manter compatibilidade de retorno snake_case
-  _mapToDTO(modelData) {
-      return {
-          id_usuario: modelData.idUsuario,
-          nome: modelData.nome,
-          email: modelData.email,
-          perfil_financeiro: modelData.perfilFinanceiro,
-          salario_mensal: modelData.salarioMensal,
-          saldo_atual: modelData.saldoAtual,
-          saldo_inicial: modelData.saldoInicial,
-          data_cadastro: modelData.dataCadastro
-      };
-  }
 }
 
 export default UserService;

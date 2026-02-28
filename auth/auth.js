@@ -8,8 +8,6 @@ export default class Auth {
         const { isValid, isLegacy } = await comparePassword(password, senhaHash);
         
         if (!isValid) {
-            // SEGURANÇA: Nunca diga "Senha inválida". Diga "Credenciais inválidas".
-            // Dizer "senha inválida" confirma para o hacker que o email existe na base de dados.
             throw new ErroNaoAutorizado("Credenciais inválidas.");
         }
 

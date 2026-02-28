@@ -37,18 +37,13 @@ export const validateCreateCategoria = [
     .notEmpty().withMessage("Nome da categoria não pode ser vazio."),
 
     body("categoria.limite")
-    .exists({ checkFalsy: true }).withMessage("Limite obrigatório")
+    .optional()
     .isFloat({ min: 0 }).withMessage("Limite deve ser um número positivo."),
 
     handleValidation
 ];
 
 export const validateGetCategorias = [
-    param('id_usuario').exists().withMessage('Id do usuário obrigatório')
-    .isInt({ gt: 0 }).withMessage('Id do usuário deve ser um número inteiro positivo.')
-    .notEmpty().withMessage('Id do usuário não pode ser vazio.'),
-
-    // opcionais
     query("ano")
       .optional()
       .isInt({ min: 2000, max: 2100 }).withMessage("Ano inválido."),

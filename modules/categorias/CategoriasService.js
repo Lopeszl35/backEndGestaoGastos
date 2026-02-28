@@ -57,9 +57,7 @@ export default class CategoriasService {
       );
 
       if (result.affectedRows === 0) {
-        return {
-          message: "Nenhuma categoria foi atualizada.",
-        }
+       throw new NaoEncontrado('Categoria não encontrada ou sem permissão para atualizar.');
       }
 
       return result;

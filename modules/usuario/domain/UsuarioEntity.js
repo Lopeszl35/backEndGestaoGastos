@@ -7,7 +7,7 @@ export class UsuarioEntity {
     idUsuario,
     nome,
     email,
-    senha_hash,
+    senha,
     senhaHash,
     perfil_financeiro,
     perfilFinanceiro,
@@ -20,7 +20,7 @@ export class UsuarioEntity {
     this.id_usuario = id_usuario || idUsuario;
     this.nome = this.#validarNome(nome);
     this.email = this.#validarEmail(email);
-    this.senha_hash = senha_hash || senhaHash;
+    this.senha = senha || senhaHash;
     this.perfil_financeiro = perfil_financeiro || perfilFinanceiro || "moderado";
     
     // Normalização de valores numéricos
@@ -87,7 +87,7 @@ export class UsuarioEntity {
       id_usuario: this.id_usuario,
       nome: this.nome,
       email: this.email,
-      senha_hash: this.senha_hash,
+      senha_hash: this.senha,
       perfil_financeiro: this.perfil_financeiro,
       salario_mensal: this.salario_mensal,
       saldo_inicial: this.saldo_inicial,
@@ -101,7 +101,7 @@ export class UsuarioEntity {
       idUsuario: this.id_usuario,
       nome: this.nome,
       email: this.email,
-      senhaHash: this.senha_hash,
+      senhaHash: this.senha,
       perfilFinanceiro: this.perfil_financeiro,
       salarioMensal: this.salario_mensal,
       saldoInicial: this.saldo_inicial,
