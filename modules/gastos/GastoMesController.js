@@ -1,5 +1,3 @@
-import { validationResult } from "express-validator";
-import ValidaEntradasGastos from "./ValidaEntradasGastos.js";
 import NaoEncontrado from "../../errors/naoEncontrado.js";
 
 export default class GastoMesController {
@@ -9,7 +7,7 @@ export default class GastoMesController {
   }
   async configGastoLimiteMes(req, res, next) {
     try {
-      const { id_usuario } = req.params;
+      const id_usuario = req.userId;
       const  dadosMes  = req.body.dadosMes;
       console.log("Dados recebidos na controller:", { id_usuario, dadosMes });
 
@@ -31,8 +29,9 @@ export default class GastoMesController {
     }
   }
   async getGastoLimiteMes(req, res, next) {
-    const { id_usuario, ano, mes } = req.query;
+    const { ano, mes } = req.query;
     try {
+      const id_usuario = req.userId;
       const result = await this.GastoMesService.getLimiteGastosMes(id_usuario, ano, mes);
       if (result && result.code === "NAO_ENCONTRADO") {
         throw new NaoEncontrado(result.mensagem, 404);
@@ -46,11 +45,11 @@ export default class GastoMesController {
   async getGastosTotaisPorCategoria(req, res, next) {
     try {
       const { inicio, fim } = req.query;
-      const idUsuario = req.query.id_usuario;
-      console.log("idUsuario no controler: ", idUsuario);
+      const id_usuario = req.userId;
+      console.log("idUsuario no controler: ", id_usuario);
       
       const result = await this.GastoMesService.getGastosTotaisPorCategoria(
-        Number(idUsuario),
+        Number(id_usuario),
         inicio || null,
         fim || null
       );
@@ -63,7 +62,7 @@ export default class GastoMesController {
 
   async addGasto(req, res, next) {
     const gasto = req.body.gastos; 
-    const id_usuario = Number(req.query.id_usuario);
+    const id_usuario = req.userId;
     try {
       const result = await this.TransactionUtil.executeTransaction(
         async (connection) => {
@@ -81,8 +80,9 @@ export default class GastoMesController {
   }
 
   async recalcularGastoAtualMes(req, res, next) {
-    const { id_usuario, ano, mes } = req.query;
+    const { ano, mes } = req.query;
     try {
+      const id_usuario = req.userId;
       const result = await this.GastoMesService.recalcularGastoAtualMes(id_usuario, ano, mes);
       return res.status(200).json(result);
     } catch (error) {

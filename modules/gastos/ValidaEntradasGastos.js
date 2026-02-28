@@ -68,13 +68,9 @@ export default class ValidaEntradas {
     }
   }
 
-  static validarEntradaLimiteGastoMes({ id_usuario, dadosMes }) {
-    console.log("ValidarEntradaLimiteGastoMes chamado com:", { id_usuario, dadosMes });
+  static validarEntradaLimiteGastoMes({ dadosMes }) {
     const erros = [];
   
-    if (!id_usuario) {
-      erros.push("id do usuário não informado");
-    }
   
     if (!dadosMes || typeof dadosMes !== "object") {
       erros.push("Informações fornecidas inválidas");

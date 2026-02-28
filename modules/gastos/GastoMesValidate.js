@@ -11,10 +11,6 @@ function handleValidation(req, _res, next) {
 }
 
 export const validateGetLimiteGastoMes = [
-    query('id_usuario').exists().withMessage('Id do usuário obrigatório')
-    .isInt({ gt: 0 }).withMessage('Id do usuário deve ser um número inteiro positivo.')
-    .notEmpty().withMessage('Id do usuário não pode ser vazio.'),
-
     query('ano').exists().withMessage('Ano obrigatório')
     .isInt({ min: 2000 }).withMessage('Ano deve ser um número inteiro válido.')
     .notEmpty().withMessage('Ano não pode ser vazio.'),
@@ -27,10 +23,6 @@ export const validateGetLimiteGastoMes = [
 ]
 
 export const validateConfigGastoLimiteMes = [
-    param('id_usuario').exists().withMessage('Id do usuário obrigatório')
-    .isInt({ gt: 0 }).withMessage('Id do usuário deve ser um número inteiro positivo.')
-    .notEmpty().withMessage('Id do usuário não pode ser vazio.'),
-
     body('dadosMes').custom((value) => {
         if (typeof value !== 'object' || value === null) {
             throw new Error('dadosMes deve ser um objeto válido.');
@@ -39,8 +31,7 @@ export const validateConfigGastoLimiteMes = [
     }),
 
     body('dadosMes').custom((dadosMes, { req }) => {
-        const id_usuario = req.params.id_usuario;
-        ValidaEntradas.validarEntradaLimiteGastoMes({ id_usuario, dadosMes });
+        ValidaEntradas.validarEntradaLimiteGastoMes({ dadosMes });
         return true;
     }),
 
@@ -48,10 +39,6 @@ export const validateConfigGastoLimiteMes = [
 ]
 
 export const validateGetGastosTotaisPorCategoria = [
-    query('id_usuario').exists().withMessage('Id do usuário obrigatório')
-    .isInt({ gt: 0 }).withMessage('Id do usuário deve ser um número inteiro positivo.')
-    .notEmpty().withMessage('Id do usuário não pode ser vazio.'),
-
     query('inicio').optional()
     .isDate({ format: 'YYYY-MM-DD' }).withMessage('Data inicio deve estar no formato YYYY-MM-DD.'),
 
@@ -69,11 +56,6 @@ export const validateGetGastosTotaisPorCategoria = [
 ]
 
 export const validateAddGasto = [
-  query("id_usuario")
-    .exists({ checkFalsy: true }).withMessage("Id do usuário é obrigatório.")
-    .bail()
-    .isInt({ gt: 0 }).withMessage("Id do usuário inválido."),
-
   body("gastos")
     .exists({ checkFalsy: true }).withMessage("Objeto 'gastos' é obrigatório.")
     .bail()
