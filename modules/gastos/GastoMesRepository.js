@@ -9,8 +9,6 @@ export default class GastoMesRepository {
 
   // 1. Configurar Limite (Upsert)
   async configGastoLimiteMes(id_usuario, dadosMes, connection) {
-    console.log("GastoMesRepository.configGastoLimiteMes chamado com:", { id_usuario, dadosMes });
-    try {
       const { ano, mes, limiteGastoMes } = dadosMes;
 
       // Usando UPSERT do Sequelize (compatível com MySQL 'ON DUPLICATE KEY UPDATE')
@@ -28,15 +26,10 @@ export default class GastoMesRepository {
         mes: Number(mes),
         limite_gasto_mes: Number(limiteGastoMes)
       };
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   // 2. Obter Limite
   async getLimiteGastosMes(id_usuario, ano, mes) {
-    try {
       const resultado = await TotalGastosMesModel.findOne({
         where: { id_usuario: id_usuario, ano, mes },
         raw: true
@@ -44,15 +37,9 @@ export default class GastoMesRepository {
       console.log("getLimiteGastosMesRows: ", resultado);
       // Retorna array para manter compatibilidade com código antigo que espera rows[0]
       return resultado ? [resultado] : [];
-    } catch (error) {
-      console.error("Erro no GastoMesRepository.getLimiteGastosMes:", error.message);
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   async atualizarLimite(id_usuario, limite_gasto_mes, connection) {
-    try {
       const [affectedRows] = await TotalGastosMesModel.update(
         { limiteGastoMes: limite_gasto_mes },
         { 
@@ -61,15 +48,10 @@ export default class GastoMesRepository {
         }
       );
       return { mensagem: "Limite atualizado com sucesso.", result: { affectedRows } };
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   // 4. Recalcular Gasto Atual do Mês (Completo)
   async recalcularGastoAtualMes(id_usuario, ano, mes, connection) {
-    try {
       // Passo 1: Calcular soma na tabela de gastos
       const soma = await GastosModel.sum('valor', {
         where: {
@@ -93,22 +75,11 @@ export default class GastoMesRepository {
         }
       );
 
-      return {
-        mensagem: "Gasto atual do mês recalculado.",
-        ano,
-        mes,
-        result: { gastoAtualMes: valorTotal }
-      };
-    } catch (error) {
-      console.error("Erro no GastoMesRepository.recalcularGastoAtualMes:", error.message);
-      throw error;
-    }
+      return { gastoAtualMes: valorTotal };
   }
 
   // 5. Relatório de Gastos por Categoria
   async getGastosTotaisPorCategoria({ idUsuario, inicio, fim }) {
-    console.log("idUsuario no repository: ", idUsuario);
-    try {
       const whereClause = { id_usuario: idUsuario };
       if (inicio && fim) {
         whereClause.data_gasto = { [Op.between]: [inicio, fim] };
@@ -146,18 +117,10 @@ export default class GastoMesRepository {
         valor: g.valor,
         descricao: g.descricao || ''
       }));
-
-    } catch (error) {
-      console.error("Erro getGastosTotaisPorCategoria:", error.message);
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   // 6. Adicionar Gasto
   async addGasto(gastos, id_usuario, connection) {
-    console.log("Gastos recebidos no repository:", gastos);
-    try {
       const novoGasto = await GastosModel.create({
         id_categoria: gastos.id_categoria,
         id_usuario: id_usuario,
@@ -173,25 +136,15 @@ export default class GastoMesRepository {
         mensagem: "Gasto adicionado com sucesso.",
         id_gasto: novoGasto.idGasto // Retorna ID gerado
       };
-    } catch (error) {
-      console.error("Erro addGasto:", error);
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   async getSaldoAtual(id_usuario, connection) {
-    try {
       // Usa UsuarioModel para buscar saldo
       const usuario = await UsuarioModel.findByPk(id_usuario, {
         attributes: ['saldoAtual'],
         transaction: connection
       });
       return usuario ? Number(usuario.saldoAtual) : 0;
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 
   // 8. Incrementar Gasto Atual Mês (Helper para os Listeners)
@@ -199,8 +152,6 @@ export default class GastoMesRepository {
     const dateObj = new Date(data_gasto);
     const ano = dateObj.getFullYear();
     const mes = dateObj.getMonth() + 1;
-
-    try {
       // Tenta atualizar primeiro (mais comum)
       const [affectedRows] = await TotalGastosMesModel.increment(
         { gastoAtualMes: Number(valor) },
@@ -235,10 +186,5 @@ export default class GastoMesRepository {
       });
 
       return { mensagem: "Gasto do mês incrementado com sucesso." };
-    } catch (error) {
-      console.error("Erro incrementarGastoAtualMes:", error.message);
-      // ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
   }
 }
