@@ -15,8 +15,8 @@ export default async () => {
   // 🛡️ ADAPTER PATTERN: Montamos um objeto que se comporta exatamente como a classe antiga,
   // mas expõe o Sequelize e todos os Models para os novos repositórios.
   const database = {
-    sequelize, // O motor do Sequelize em si
-    ...models, // Todos os seus Models (UsuarioModel, etc.)
+    sequelize, 
+    ...models,
 
     // Retrocompatibilidade: Isso impede que o utils/TransactionUtil.js quebre
     async beginTransaction() {

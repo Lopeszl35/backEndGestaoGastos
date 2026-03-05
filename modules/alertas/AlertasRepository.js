@@ -1,58 +1,49 @@
-import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
+import { QueryTypes } from "sequelize";
 
 export default class AlertasRepository {
-  constructor(database) {
-    this.database = database;
+  constructor(dbContext) {
+    this.sequelize = dbContext.sequelize;
+    this.CategoriasModel = dbContext.CategoriasModel;
+    this.AlertaModel = dbContext.AlertaModel;
   }
 
   async buscarCategoriaPorId({ id_usuario, id_categoria, connection }) {
-    const sql = `
-      SELECT id_categoria, nome, limite, ativo
-      FROM categorias_gastos
-      WHERE id_usuario = ?
-        AND id_categoria = ?
-      LIMIT 1;
-    `;
+    const categoria = await this.CategoriasModel.findOne({
+      where: {
+        idUsuario: id_usuario,
+        idCategoria: id_categoria
+      },
+      attributes: ['idCategoria', 'nome', 'limite', 'ativo'],
+      transaction: connection,
+      raw: true // Retorna os dados puros (JSON) ao invés da instância do Sequelize
+    });
 
-    try {
-      if (connection) {
-        const [rows] = await connection.query(sql, [Number(id_usuario), Number(id_categoria)]);
-        return rows?.[0] ?? null;
-      }
-
-      const rows = await this.database.executaComando(sql, [Number(id_usuario), Number(id_categoria)]);
-      return rows?.[0] ?? null;
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
+    return categoria;
   }
 
   async buscarTotalGastoCategoriaNoMes({ id_usuario, id_categoria, data_gasto, connection }) {
-    // usa YEAR/MONTH do MySQL pra evitar problemas de timezone/parse
     const sql = `
       SELECT COALESCE(SUM(valor), 0) AS total
       FROM gastos
-      WHERE id_usuario = ?
-        AND id_categoria = ?
-        AND YEAR(data_gasto) = YEAR(?)
-        AND MONTH(data_gasto) = MONTH(?);
+      WHERE id_usuario = :id_usuario
+        AND id_categoria = :id_categoria
+        AND YEAR(data_gasto) = YEAR(:data_gasto)
+        AND MONTH(data_gasto) = MONTH(:data_gasto);
     `;
 
-    const params = [Number(id_usuario), Number(id_categoria), data_gasto, data_gasto];
+    // 🛡️ DYNAMIC TRANSACTIONS: O Sequelize aceita 'transaction: connection' internamente.
+    // Se a connection for undefined/null, ele roda livre no pool automaticamente.
+    const result = await this.sequelize.query(sql, {
+      replacements: { 
+        id_usuario: Number(id_usuario), 
+        id_categoria: Number(id_categoria), 
+        data_gasto 
+      },
+      type: QueryTypes.SELECT,
+      transaction: connection
+    });
 
-    try {
-      if (connection) {
-        const [rows] = await connection.query(sql, params);
-        return Number(rows?.[0]?.total ?? 0);
-      }
-
-      const rows = await this.database.executaComando(sql, params);
-      return Number(rows?.[0]?.total ?? 0);
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
+    return Number(result[0]?.total ?? 0);
   }
 
   async existeAlertaCategoriaNoMes({
@@ -63,65 +54,43 @@ export default class AlertasRepository {
     tipo_alerta,
     connection,
   }) {
+    // Mantida a query bruta devido ao uso extenso de funções de extração JSON do MySQL.
     const sql = `
       SELECT id_alerta
       FROM alertas_financeiros
-      WHERE id_usuario = ?
-        AND tipo_alerta = ?
-        AND JSON_UNQUOTE(JSON_EXTRACT(dados_json, '$.id_categoria')) = ?
-        AND JSON_UNQUOTE(JSON_EXTRACT(dados_json, '$.ano')) = ?
-        AND JSON_UNQUOTE(JSON_EXTRACT(dados_json, '$.mes')) = ?
+      WHERE id_usuario = :id_usuario
+        AND tipo_alerta = :tipo_alerta
+        AND JSON_UNQUOTE(JSON_EXTRACT(dados_json, '$.id_categoria')) = :id_categoria
+        AND JSON_UNQUOTE(JSON_EXTRACT(dados_json, '$.ano')) = :ano
+        AND JSON_UNQUOTE(JSON_EXTRACT(dados_json, '$.mes')) = :mes
       LIMIT 1;
     `;
 
-    const params = [
-      Number(id_usuario),
-      String(tipo_alerta),
-      String(Number(id_categoria)),
-      String(Number(ano)),
-      String(Number(mes)),
-    ];
+    const result = await this.sequelize.query(sql, {
+      replacements: {
+        id_usuario: Number(id_usuario),
+        tipo_alerta: String(tipo_alerta),
+        id_categoria: String(Number(id_categoria)),
+        ano: String(Number(ano)),
+        mes: String(Number(mes))
+      },
+      type: QueryTypes.SELECT,
+      transaction: connection
+    });
 
-    try {
-      if (connection) {
-        const [rows] = await connection.query(sql, params);
-        return !!rows?.length;
-      }
-
-      const rows = await this.database.executaComando(sql, params);
-      return !!rows?.length;
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
+    // Retorna true se encontrou pelo menos um resultado
+    return !!result?.length;
   }
 
   async criarAlerta({ id_usuario, severidade, tipo_alerta, mensagem, dados_json, connection }) {
-    const sql = `
-      INSERT INTO alertas_financeiros (id_usuario, severidade, tipo_alerta, mensagem, dados_json)
-      VALUES (?, ?, ?, ?, ?);
-    `;
+    const novoAlerta = await this.AlertaModel.create({
+      idUsuario: id_usuario,
+      severidade: severidade,
+      tipoAlerta: tipo_alerta,
+      mensagem: mensagem,
+      dadosJson: dados_json
+    }, { transaction: connection });
 
-    const params = [
-      Number(id_usuario),
-      String(severidade),
-      String(tipo_alerta),
-      String(mensagem),
-      JSON.stringify(dados_json),
-    ];
-
-    try {
-      if (connection) {
-        const [result] = await connection.query(sql, params);
-        return { id_alerta: result.insertId };
-      }
-
-      // sem transação: usa pool
-      const affected = await this.database.executaComandoNonQuery(sql, params);
-      return { affectedRows: affected };
-    } catch (error) {
-      ErroSqlHandler.tratarErroSql(error);
-      throw error;
-    }
+    return { id_alerta: novoAlerta.idAlerta };
   }
 }

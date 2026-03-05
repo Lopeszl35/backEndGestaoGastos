@@ -5,10 +5,11 @@ export class GastosModel extends Model {}
 
 GastosModel.init(
     {
-        id_gasto: {
+        idGasto: {
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true,
+            field: "id_gasto",
         },
         id_usuario: {
             type: DataTypes.INTEGER,

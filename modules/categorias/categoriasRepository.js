@@ -12,7 +12,7 @@ export default class CategoriasRepository {
         {
           idUsuario: id_usuario,
           nome: categoria.nome,
-          nome_normalizado: nomeNormalizado,
+          nomeNormalizado: nomeNormalizado,
           limite: categoria.limite,
           ativo: true,
         },

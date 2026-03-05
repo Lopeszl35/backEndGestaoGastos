@@ -56,7 +56,6 @@ export default class GastoMesService {
   }
 
   async addGasto(gastos, id_usuario, connection) {
-    console.log("Gastos recebidos no service:", gastos);
     try {
       let cartao = null;
       // 1. Validação prévia

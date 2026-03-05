@@ -54,7 +54,7 @@ class CategoriasController {
 
   async deleteCategoria(req, res, next) {
     const id_usuario = req.userId;
-    const { id_categoria } = req.params;
+    const { id_categoria } = matchedData(req, { locations: ["params"] });
     const dataAtual = new Date();
     
     try {
@@ -79,8 +79,8 @@ class CategoriasController {
 
   async getCategoriasAtivas(req, res, next) {
     const id_usuario = req.userId;
-    const ano = req.query.ano ? Number(req.query.ano) : null;
-    const mes = req.query.mes ? Number(req.query.mes) : null;
+    const ano = matchedData(req, { locations: ["query"] }).ano ? Number(matchedData(req, { locations: ["query"] }).ano) : null;
+    const mes = matchedData(req, { locations: ["query"] }).mes ? Number(matchedData(req, { locations: ["query"] }).mes) : null;
 
     try {
       const result = await this.CategoriasService.getCategoriasAtivas(id_usuario, ano, mes);
@@ -101,7 +101,7 @@ class CategoriasController {
   }
 
   async reativarCategoria(req, res, next) {
-    const { id_categoria } = req.params;
+    const { id_categoria } = matchedData(req, { locations: ["params"] });
     const id_usuario = req.userId;
 
     try {

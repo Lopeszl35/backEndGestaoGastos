@@ -1,4 +1,5 @@
 import NaoEncontrado from "../../errors/naoEncontrado.js";
+import { matchedData } from "express-validator";
 
 export default class GastoMesController {
   constructor(GastoMesService, TransactionUtil) {
@@ -8,10 +9,9 @@ export default class GastoMesController {
   async configGastoLimiteMes(req, res, next) {
     try {
       const id_usuario = req.userId;
-      const  dadosMes  = req.body.dadosMes;
-      console.log("Dados recebidos na controller:", { id_usuario, dadosMes });
+      const  dadosMes  = matchedData(req, { locations: ['body'] }).dadosMes;
 
-      const result = await this.TransactionUtil.executeTransaction(
+      await this.TransactionUtil.executeTransaction(
         async (connection) => {
           return this.GastoMesService.configGastoLimiteMes(
             id_usuario,
