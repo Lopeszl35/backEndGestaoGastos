@@ -28,15 +28,20 @@ export default class GastoMesController {
       next(error);
     }
   }
-  async getGastoLimiteMes(req, res, next) {
-    const { ano, mes } = req.query;
+  async getGastoLimiteMes(req, res, next) { 
     try {
+      const { ano, mes } = matchedData(req, { locations: ["query"] });
       const id_usuario = req.userId;
-      const result = await this.GastoMesService.getLimiteGastosMes(id_usuario, ano, mes);
-      if (result && result.code === "NAO_ENCONTRADO") {
-        throw new NaoEncontrado(result.mensagem, 404);
-      } 
-      return res.status(200).json(result);
+
+      const limite = await this.GastoMesService.getLimiteGastosMes(id_usuario, ano, mes);
+      if (!limite) {
+              throw new NaoEncontrado("Nenhum limite de gastos configurado para este mês.");
+          }
+      res.status(200).json({
+              message: "Limite recuperado com sucesso.",
+              status: 200,
+              data: limite
+          });
     } catch (error) {
       next(error);
     }
@@ -46,7 +51,6 @@ export default class GastoMesController {
     try {
       const { inicio, fim } = req.query;
       const id_usuario = req.userId;
-      console.log("idUsuario no controler: ", id_usuario);
       
       const result = await this.GastoMesService.getGastosTotaisPorCategoria(
         Number(id_usuario),
@@ -83,7 +87,16 @@ export default class GastoMesController {
     const { ano, mes } = req.query;
     try {
       const id_usuario = req.userId;
-      const result = await this.GastoMesService.recalcularGastoAtualMes(id_usuario, ano, mes);
+      const result = await this.TransactionUtil.executeTransaction(
+        async (connection) => {
+          return await this.GastoMesService.recalcularGastoAtualMes(
+            id_usuario,
+            ano,
+            mes,
+            connection
+          );
+        }
+      );
       return res.status(200).json(result);
     } catch (error) {
       next(error);

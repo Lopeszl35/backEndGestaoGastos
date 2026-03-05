@@ -71,7 +71,7 @@ export default function registrarListenersDeGastos({
   barramentoEventos.registrarListener(
     EVENTO_FORMA_PAGAMENTO_CREDITO,
     async (payload) => {
-      const { id_usuario, gasto } = payload; 
+      const { id_usuario, gasto, connection } = payload; 
       console.log("Entrou em gasto credito listener");
 
       if (!gasto.id_cartao && !gasto.uuidCartao) {

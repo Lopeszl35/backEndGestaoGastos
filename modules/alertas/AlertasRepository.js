@@ -84,13 +84,15 @@ export default class AlertasRepository {
 
   async criarAlerta({ id_usuario, severidade, tipo_alerta, mensagem, dados_json, connection }) {
     const novoAlerta = await this.AlertaModel.create({
-      idUsuario: id_usuario,
+      id_usuario: id_usuario,
       severidade: severidade,
-      tipoAlerta: tipo_alerta,
+      tipo_alerta: tipo_alerta,
       mensagem: mensagem,
       dadosJson: dados_json
     }, { transaction: connection });
 
-    return { id_alerta: novoAlerta.idAlerta };
+    // Fallback de segurança para garantir que pegamos o ID independente de como o Model mapeia o retorno
+    const idDoAlertaGerado = novoAlerta.id_alerta || novoAlerta.idAlerta || novoAlerta.id;
+    return { id_alerta: idDoAlertaGerado };
   }
 }

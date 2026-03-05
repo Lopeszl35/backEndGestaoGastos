@@ -1,18 +1,20 @@
-import { GastosModel, TotalGastosMesModel, CategoriasModel, UsuarioModel } from "../../database/models/index.js";
-import { sequelize } from "../../database/sequelize.js";
 import { Op, QueryTypes } from "sequelize";
-import ErroSqlHandler from "../../errors/ErroSqlHandler.js";
-import { CartaoCreditoModel } from "../../database/models/index.js";
 
 export default class GastoMesRepository {
-  constructor() {}
+  constructor(dbContext) {
+    this.sequelize = dbContext.sequelize;
+    this.GastosModel = dbContext.GastosModel;
+    this.TotalGastosMesModel = dbContext.TotalGastosMesModel;
+    this.CategoriasModel = dbContext.CategoriasModel;
+    this.UsuarioModel = dbContext.UsuarioModel;
+  }
 
   // 1. Configurar Limite (Upsert)
   async configGastoLimiteMes(id_usuario, dadosMes, connection) {
       const { ano, mes, limiteGastoMes } = dadosMes;
 
-      // Usando UPSERT do Sequelize (compatível com MySQL 'ON DUPLICATE KEY UPDATE')
-      await TotalGastosMesModel.upsert({
+      // Usando UPSERT do Sequelize
+      await this.TotalGastosMesModel.upsert({
         id_usuario: id_usuario,
         ano: Number(ano),
         mes: Number(mes),
@@ -30,17 +32,16 @@ export default class GastoMesRepository {
 
   // 2. Obter Limite
   async getLimiteGastosMes(id_usuario, ano, mes) {
-      const resultado = await TotalGastosMesModel.findOne({
+      const resultado = await this.TotalGastosMesModel.findOne({
         where: { id_usuario: id_usuario, ano, mes },
         raw: true
       });
-      console.log("getLimiteGastosMesRows: ", resultado);
       // Retorna array para manter compatibilidade com código antigo que espera rows[0]
-      return resultado ? [resultado] : [];
+      return resultado || null;
   }
 
   async atualizarLimite(id_usuario, limite_gasto_mes, connection) {
-      const [affectedRows] = await TotalGastosMesModel.update(
+      const [affectedRows] = await this.TotalGastosMesModel.update(
         { limiteGastoMes: limite_gasto_mes },
         { 
           where: { id_usuario: id_usuario },
@@ -53,12 +54,12 @@ export default class GastoMesRepository {
   // 4. Recalcular Gasto Atual do Mês (Completo)
   async recalcularGastoAtualMes(id_usuario, ano, mes, connection) {
       // Passo 1: Calcular soma na tabela de gastos
-      const soma = await GastosModel.sum('valor', {
+      const soma = await this.GastosModel.sum('valor', {
         where: {
           id_usuario: id_usuario,
           [Op.and]: [
-            sequelize.where(sequelize.fn('YEAR', sequelize.col('data_gasto')), ano),
-            sequelize.where(sequelize.fn('MONTH', sequelize.col('data_gasto')), mes)
+            this.sequelize.where(this.sequelize.fn('YEAR', this.sequelize.col('data_gasto')), ano),
+            this.sequelize.where(this.sequelize.fn('MONTH', this.sequelize.col('data_gasto')), mes)
           ]
         },
         transaction: connection
@@ -67,10 +68,10 @@ export default class GastoMesRepository {
       const valorTotal = soma || 0;
 
       // Passo 2: Atualizar tabela de totais
-      await TotalGastosMesModel.update(
+      await this.TotalGastosMesModel.update(
         { gastoAtualMes: valorTotal },
         {
-          where: { idUsuario: id_usuario, ano, mes },
+          where: { id_usuario: id_usuario, ano, mes },
           transaction: connection
         }
       );
@@ -85,23 +86,23 @@ export default class GastoMesRepository {
         whereClause.data_gasto = { [Op.between]: [inicio, fim] };
       }
 
-      const gastos = await GastosModel.findAll({
+      const gastos = await this.GastosModel.findAll({
         attributes: [
-          ['id_gasto', 'id_gasto'], // Aliases para manter compatibilidade exata
-          [sequelize.fn('DATE_FORMAT', sequelize.col('data_gasto'), '%Y-%m-%d'), 'data_gasto'],
+          ['id_gasto', 'id_gasto'], 
+          [this.sequelize.fn('DATE_FORMAT', this.sequelize.col('data_gasto'), '%Y-%m-%d'), 'data_gasto'],
           ['valor', 'valor'],
           ['descricao', 'descricao']
         ],
         include: [{
-          model: CategoriasModel,
+          model: this.CategoriasModel,
           as: 'categoria',
           attributes: [['id_categoria', 'id_categoria'], ['nome', 'nomeCategoria']],
           required: true // Inner Join
         }],
         where: whereClause,
         order: [
-          [{ model: CategoriasModel, as: 'categoria' }, 'nome', 'ASC'],
-          ['data_gasto', 'ASC'], // Sequelize usa o nome do atributo do model no order
+          [{ model: this.CategoriasModel, as: 'categoria' }, 'nome', 'ASC'],
+          ['data_gasto', 'ASC'], 
           ['id_gasto', 'ASC']
         ],
         raw: true,
@@ -121,7 +122,7 @@ export default class GastoMesRepository {
 
   // 6. Adicionar Gasto
   async addGasto(gastos, id_usuario, connection) {
-      const novoGasto = await GastosModel.create({
+      const novoGasto = await this.GastosModel.create({
         id_categoria: gastos.id_categoria,
         id_usuario: id_usuario,
         valor: gastos.valor,
@@ -133,14 +134,14 @@ export default class GastoMesRepository {
       }, { transaction: connection });
 
       return {
-        mensagem: "Gasto adicionado com sucesso.",
-        id_gasto: novoGasto.idGasto // Retorna ID gerado
+        // 🛡️ CORREÇÃO: Propriedade nativa do Sequelize baseada na coluna
+        id_gasto: novoGasto.idGasto 
       };
   }
 
   async getSaldoAtual(id_usuario, connection) {
       // Usa UsuarioModel para buscar saldo
-      const usuario = await UsuarioModel.findByPk(id_usuario, {
+      const usuario = await this.UsuarioModel.findByPk(id_usuario, {
         attributes: ['saldoAtual'],
         transaction: connection
       });
@@ -148,25 +149,12 @@ export default class GastoMesRepository {
   }
 
   // 8. Incrementar Gasto Atual Mês (Helper para os Listeners)
- async incrementarGastoAtualMes({ id_usuario, data_gasto, valor, connection }) {
-    const dateObj = new Date(data_gasto);
-    const ano = dateObj.getFullYear();
-    const mes = dateObj.getMonth() + 1;
-      // Tenta atualizar primeiro (mais comum)
-      const [affectedRows] = await TotalGastosMesModel.increment(
-        { gastoAtualMes: Number(valor) },
-        { 
-          where: { id_usuario, ano, mes },
-          transaction: connection
-        }
-      );
+  async incrementarGastoAtualMes({ id_usuario, data_gasto, valor, connection }) {
+      const dateObj = new Date(data_gasto);
+      const ano = dateObj.getFullYear();
+      const mes = dateObj.getMonth() + 1;
 
-      // Se não atualizou nada, é porque não existe. Cria o registro.
-      // O 'increment' do Sequelize retorna [[instancia, rows], affectedCount] dependendo do dialeto,
-      // mas para update puro, verificar se o registro existe antes é mais seguro se o increment falhar.
-      
-      // Abordagem mais robusta: SQL Raw para Upsert (Insert ou Update)
-      // Isso resolve garantido o problema de concorrência e transação
+      // Abordagem mais robusta: SQL Raw para Upsert
       const sql = `
         INSERT INTO total_gastos_mes (id_usuario, ano, mes, limite_gasto_mes, gasto_atual_mes, created_at, updated_at)
         VALUES (:id_usuario, :ano, :mes, 0.00, :valor, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -175,7 +163,7 @@ export default class GastoMesRepository {
           updated_at = CURRENT_TIMESTAMP;
       `;
 
-      await sequelize.query(sql, {
+      await this.sequelize.query(sql, {
         replacements: {
           id_usuario,
           ano,
@@ -184,7 +172,5 @@ export default class GastoMesRepository {
         },
         transaction: connection
       });
-
-      return { mensagem: "Gasto do mês incrementado com sucesso." };
   }
 }

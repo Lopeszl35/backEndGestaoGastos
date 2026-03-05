@@ -122,10 +122,12 @@ export default class GastoMesService {
     }
   }
 
-  async recalcularGastoAtualMes(id_usuario, connection) {
+  async recalcularGastoAtualMes(id_usuario, ano, mes, connection) {
     try {
       return await this.GastoMesRepository.recalcularGastoAtualMes(
         id_usuario,
+        ano,
+        mes,
         connection
       );
     } catch (error) {
