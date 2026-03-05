@@ -57,13 +57,11 @@ export default function registrarListenersDeGastos({
     EVENTO_GASTO_INSERIDO,
     async (payload) => {
       const { id_usuario, gasto, connection } = payload;
-      if (userRepository.diminuirSaldoAtual) {
           await userRepository.diminuirSaldoAtual({
             id_usuario,
             valor: gasto.valor,
             connection,
           });
-      }
     }
   );
 
@@ -75,83 +73,50 @@ export default function registrarListenersDeGastos({
       console.log("Entrou em gasto credito listener");
 
       if (!gasto.id_cartao && !gasto.uuidCartao) {
-        console.error("ERRO: Gasto crédito sem cartão identificado.");
-        return;
+        throw new Error("Gasto no crédito exige um cartão identificado.");
       }
 
       // Busca nome da categoria
       let nomeCategoria = "Outros";
-      try {
-        if (gasto.id_categoria && categoriasRepository) {
-          const catDb = await categoriasRepository.buscarPorId(gasto.id_categoria, id_usuario);
-          console.log("catDb: ", catDb);
-          if (catDb && catDb.nome) {
-            nomeCategoria = catDb.nome;
-          }
+      if (gasto.id_categoria && categoriasRepository) {
+        // Usa o repositório de forma limpa, se der erro, sobe e faz rollback
+        const catDb = await categoriasRepository.buscarPorId({
+          id_categoria: gasto.id_categoria,
+          id_usuario: id_usuario, 
+          connection // Repassa transação pra leitura limpa
+        });
+        if (catDb && catDb.nome) {
+          nomeCategoria = catDb.nome;
         }
-      } catch (error) {
-        console.warn(`Erro ao buscar categoria do gasto: ${error.message}`);
       }
 
-      // --- CORREÇÃO DE DATA AQUI ---
-      // Converte qualquer formato de entrada para um objeto Date e depois para string YYYY-MM-DD
+      // Converte data
       let dataFormatada;
-      try {
-          // Garante que a data seja interpretada corretamente
-          const dataObj = new Date(gasto.data_gasto);
-          if (isNaN(dataObj.getTime())) {
-              throw new Error("Data inválida");
-          }
-          // Pega YYYY-MM-DD (ISO 8601 part)
-          dataFormatada = dataObj.toISOString().split('T')[0];
-      } catch (e) {
-          // Fallback: se der erro na conversão, tenta usar o que veio (mas o Entity vai validar)
-          dataFormatada = String(gasto.data_gasto);
+      const dataObj = new Date(gasto.data_gasto);
+      if (isNaN(dataObj.getTime())) {
+          throw new Error("Data de lançamento no cartão inválida");
       }
-
+      dataFormatada = dataObj.toISOString().split('T')[0];
+      
       const dadosLancamento = {
         descricao: gasto.descricao,
         categoria: nomeCategoria,
         valorTotal: Number(gasto.valor),
-        dataCompra: dataFormatada, // Agora envia "YYYY-MM-DD" com hífens
+        dataCompra: dataFormatada,
         parcelado: false,
         numeroParcelas: 1,
       };
 
-      let uuidParaCartao = gasto.uuidCartao;
+      // 🛡️ UNIT OF WORK: Se falhar, falha rápido (Fail-Fast) 
+      // e o GastoMesService reverte a inserção na tabela de gastos!
+      await cartoesService.criarLancamentoCartao({
+        idUsuario: id_usuario,
+        uuidCartao: gasto.uuidCartao,
+        dadosLancamento,
+        connection // 💉 INJETANDO A TRANSAÇÃO NO MOTOR DE CARTÕES
+      });
       
-      const TENTATIVAS_MAXIMAS = 3;
-      let tentativa = 1;
-      let sucesso = false;
-
-      while (tentativa <= TENTATIVAS_MAXIMAS && !sucesso) {
-        try {
-          await cartoesService.criarLancamentoCartao({
-            idUsuario: id_usuario,
-            uuidCartao: uuidParaCartao,
-            dadosLancamento,
-          });
-          sucesso = true;
-          console.log(`Lançamento cartão processado na tentativa ${tentativa}.`);
-        } catch (error) {
-          console.warn(`Tentativa ${tentativa} falhou: ${error.message}`);
-          
-          if (tentativa < TENTATIVAS_MAXIMAS) {
-            await esperar(1000 * Math.pow(2, tentativa - 1));
-            tentativa++;
-          } else {
-            console.error("Falha final ao processar cartão.");
-            if (alertasService?.criarAlertaSistema) {
-                await alertasService.criarAlertaSistema({
-                    id_usuario,
-                    tipo_alerta: "ERRO_PROCESSAMENTO",
-                    mensagem: `Falha ao lançar despesa '${gasto.descricao}' no cartão: ${error.message}`,
-                    severidade: "ALTA"
-                });
-            }
-          }
-        }
-      }
+      console.log(`Lançamento no cartão processado com sucesso.`);
     }
   );
 }

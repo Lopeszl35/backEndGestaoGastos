@@ -39,16 +39,6 @@ TotalGastosMesModel.init(
       defaultValue: 0.0,
       field: "gasto_atual_mes", // SnakeCase no Banco
     },
-    created_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
-    },
   },
   {
     sequelize,

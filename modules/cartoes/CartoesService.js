@@ -306,16 +306,18 @@ export class CartoesService {
     };
   }
 
-  async criarLancamentoCartao({ idUsuario, uuidCartao, dadosLancamento }) {
-    const cartaoModel =
-      await this.cartoesRepositorio.buscarCartaoPorUuidEUsuario(
-        uuidCartao,
-        idUsuario
-      );
+  async criarLancamentoCartao({ idUsuario, uuidCartao, dadosLancamento, connection }) {
+    // 1. Busca validando o cartão (Leitura)
+    const cartaoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuario(
+      uuidCartao,
+      idUsuario,
+      connection // 🛡️ Opcional: passa a transação para leitura também, caso exista
+    );
 
     if (!cartaoModel) throw new naoEncontrado("Cartão não encontrado.");
     if (!cartaoModel.ativo) throw new naoEncontrado("Cartão inativo.");
 
+    // 2. Rich Domain: Entidade orquestrando a lógica matemática da fatura
     const entidade = new CartaoLancamentoEntity({
       descricao: dadosLancamento.descricao,
       categoria: dadosLancamento.categoria,
@@ -326,20 +328,21 @@ export class CartoesService {
       diaFechamento: cartaoModel.diaFechamento,
     });
 
-    const resultado = await sequelize.transaction(async (transaction) => {
-      const lancamentoModel =
-        await this.lancamentosRepositorio.criarLancamentoCartao({
-          idUsuario,
-          idCartao: cartaoModel.idCartao,
-          descricao: entidade.descricao,
-          categoria: entidade.categoria,
-          valorTotal: entidade.valorTotal,
-          numeroParcelas: entidade.numeroParcelas,
-          valorParcela: entidade.valorParcela,
-          dataCompra: entidade.dataCompra,
-          primeiroMesRef: entidade.primeiroMesRef,
-          transaction,
-        });
+    // 3. Isolamento da Lógica de Escrita
+    // Criamos uma função interna para não repetir código
+    const executarOperacoesDeBanco = async (t) => {
+      const lancamentoModel = await this.lancamentosRepositorio.criarLancamentoCartao({
+        idUsuario,
+        idCartao: cartaoModel.idCartao,
+        descricao: entidade.descricao,
+        categoria: entidade.categoria,
+        valorTotal: entidade.valorTotal,
+        numeroParcelas: entidade.numeroParcelas,
+        valorParcela: entidade.valorParcela,
+        dataCompra: entidade.dataCompra,
+        primeiroMesRef: entidade.primeiroMesRef,
+        transaction: t, // 💉 Injeta a transação (Injetada ou Nova) no Repositório
+      });
 
       for (const { ano, mes } of entidade.mesesImpactados) {
         await this.faturasRepositorio.upsertSomarTotalLancamentos({
@@ -348,13 +351,29 @@ export class CartoesService {
           ano,
           mes,
           valorSomar: entidade.valorParcela,
-          transaction,
+          transaction: t, // 💉 Injeta a mesma transação
         });
       }
 
       return lancamentoModel;
-    });
+    };
 
+    // 4. 🛡️ CONTROLE CONDICIONAL DE TRANSAÇÃO (TRANSACTION PROPAGATION)
+    let resultado;
+    
+    if (connection) {
+      // CENÁRIO A: Veio do Barramento de Eventos (Gastos). 
+      // Embarcamos na transação global para garantir o ACID total.
+      resultado = await executarOperacoesDeBanco(connection);
+    } else {
+      // CENÁRIO B: Inserção avulsa direta pelo CartoesController.
+      // O serviço cria sua própria transação isolada para garantir a fatura.
+      resultado = await sequelize.transaction(async (t) => {
+        return await executarOperacoesDeBanco(t);
+      });
+    }
+
+    // 5. Retorna DTO seguro para o cliente
     return {
       idLancamento: resultado.idLancamento,
       cartaoUuid: uuidCartao,

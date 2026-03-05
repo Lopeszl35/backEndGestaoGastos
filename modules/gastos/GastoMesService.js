@@ -3,7 +3,7 @@ import {
   EVENTO_FORMA_PAGAMENTO_CREDITO,
 } from "./registrarListenersDeGastos.js";
 import RequisicaoIncorreta from "../../errors/RequisicaoIncorreta.js";
-import { formatarDataParaBanco } from "../../utils/formatarDataParaBanco.js";
+import { GastosEntity } from "./domain/GastosEntity.js"; 
 
 export default class GastoMesService {
   constructor(GastoMesRepository, BarramentoEventos, CartoesService) {
@@ -13,126 +13,98 @@ export default class GastoMesService {
   }
 
   async configGastoLimiteMes(id_usuario, dadosMes, connection) {
-    try {
       return await this.GastoMesRepository.configGastoLimiteMes(
         id_usuario,
         dadosMes,
         connection
       );
-    } catch (error) {
-      console.error(
-        "Erro no GastoMesService.configGastoLimiteMes:",
-        error.message
-      );
-      throw error;
-    }
   }
 
   async getLimiteGastosMes(id_usuario, ano, mes) {
-    try {
       return await this.GastoMesRepository.getLimiteGastosMes(
         id_usuario,
         ano,
         mes
       );
-    } catch (error) {
-      console.error(
-        "Erro ao obter limite de gastos no model: " + error.message
-      );
-      return error;
-    }
   }
 
-  async getGastosTotaisPorCategoria( idUsuario, inicio, fim ) {
-    try {
+  async getGastosTotaisPorCategoria(idUsuario, inicio, fim) {
       return this.GastoMesRepository.getGastosTotaisPorCategoria({
         idUsuario,
         inicio,
         fim,
       });
-    } catch (error) {
-      return error;
-    }
   }
 
-  async addGasto(gastos, id_usuario, connection) {
-    try {
-      let cartao = null;
-      // 1. Validação prévia
-      if (gastos.forma_pagamento === "CREDITO") {
-        console.log("Entrou na validação prévia")
-        if (!gastos.uuidCartao) {
+  async addGasto(gastosDTO, id_usuario, connection) {
+      // 🛡️ RICH DOMAIN: A Entidade valida as regras de negócio internamente (ex: valor > 0)
+      const gastoEntidade = new GastosEntity({
+          ...gastosDTO,
+          id_usuario
+      });
+
+      // 1. Validação prévia de Cartão de Crédito
+      if (gastoEntidade.forma_pagamento === "CREDITO") {
+        if (!gastosDTO.uuidCartao) {
           throw new RequisicaoIncorreta("Para lançamentos no crédito, é obrigatório selecionar um cartão.");
         }
-        cartao = await this.CartoesService.buscarPorUuid(
-          gastos.uuidCartao,
+        
+        const cartao = await this.CartoesService.buscarPorUuid(
+          gastosDTO.uuidCartao,
           connection
-        )
-        console.log("Cartao: ", cartao);
+        );
   
         if (!cartao) {
           throw new RequisicaoIncorreta("Cartão não encontrado, ou inválido.");
         }
-        gastos.id_cartao = cartao.id_cartao;
+        
+        // Atualiza a entidade com o ID do cartão relacional
+        gastoEntidade.id_cartao = cartao.id_cartao;
       }
 
+      // 2. Prepara os dados para o Banco usando o contrato da Entidade
+      const dadosParaPersistencia = gastoEntidade.toPersistence();
 
-      // 2. Prepara e Salva o Gasto no Banco de Dados (Tabela 'gastos')
-      // Isso é necessário independente da forma de pagamento para gerar o ID e histórico
-      gastos.data_gasto = formatarDataParaBanco(gastos.data_gasto);
+      // Salva na tabela 'gastos' usando o formato blindado
       const result = await this.GastoMesRepository.addGasto(
-        gastos,
+        dadosParaPersistencia,
         id_usuario,
         connection
       );
 
       // 3. Lógica de Eventos (Efeitos Colaterais)
       if (this.BarramentoEventos) {
-        if (gastos.forma_pagamento === "CREDITO") {
-          // CENÁRIO CRÉDITO:
-          // Apenas lança na fatura do cartão.
-          // NÃO emite 'EVENTO_GASTO_INSERIDO', pois esse evento desconta saldo e soma no total do mês.
-          await this.BarramentoEventos.emitir(EVENTO_FORMA_PAGAMENTO_CREDITO, {
+        
+        // Montamos um Payload seguro unindo a entidade e os IDs do cartão/banco
+        const eventoPayload = {
             id_usuario,
-            gasto: gastos, 
-            connection,
-          });
-
-        } else {
-          // CENÁRIO DÉBITO / DINHEIRO / PIX:
-          // Emite o evento padrão que:
-          // 1. Desconta do Saldo Atual
-          // 2. Incrementa Gasto Total do Mês
-          // 3. Verifica Alertas
-          await this.BarramentoEventos.emitir(EVENTO_GASTO_INSERIDO, {
-            id_usuario,
-            gasto: gastos,
+            gasto: {
+                ...dadosParaPersistencia,
+                uuidCartao: gastosDTO.uuidCartao // Mantém para uso do Listener
+            },
             id_gasto: result?.id_gasto,
             connection,
-          });
+        };
+
+        if (gastoEntidade.forma_pagamento === "CREDITO") {
+          // CENÁRIO CRÉDITO: Lança na fatura, NÃO abate saldo do mês agora.
+          await this.BarramentoEventos.emitir(EVENTO_FORMA_PAGAMENTO_CREDITO, eventoPayload);
+        } else {
+          // CENÁRIO COMUM (Débito, Pix, Dinheiro): Desconta saldo, soma no mês, verifica alertas.
+          await this.BarramentoEventos.emitir(EVENTO_GASTO_INSERIDO, eventoPayload);
         }
       }
 
       // 4. Retorna o resultado da inserção
       return result;
-
-    } catch (error) {
-      console.log("Erro ao adicionar gasto no service:", error.message);
-      throw error;
-    }
   }
 
   async recalcularGastoAtualMes(id_usuario, ano, mes, connection) {
-    try {
       return await this.GastoMesRepository.recalcularGastoAtualMes(
         id_usuario,
         ano,
         mes,
         connection
       );
-    } catch (error) {
-      console.log("Erro ao recalcular gasto atual no service:", error.message);
-      throw error;
-    }
   }
 }

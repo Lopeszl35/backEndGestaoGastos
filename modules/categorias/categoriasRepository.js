@@ -142,12 +142,13 @@ export default class CategoriasRepository {
       return { affectedRows };
   }
 
-  async buscarPorId(id_categoria, id_usuario) {
+  async buscarPorId(id_categoria, id_usuario, connection) {
       const categoria = await this.CategoriasModel.findOne({
         where: {
           idCategoria: id_categoria,
           idUsuario: id_usuario,
         },
+        transaction: connection, // Usando a conexão da transação
       });
       return categoria ? categoria.toJSON() : null;
   }
