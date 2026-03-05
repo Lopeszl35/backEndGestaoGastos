@@ -28,7 +28,7 @@ export default function FinanciamentosRoutes(controller) {
   );
 
   // 3. Listar Financiamentos Ativos
-  // GET /api/financiamentos?id_usuario=1
+  // GET /api/financiamentos
   router.get(
     "/financiamentosAtivos", 
     validarListagem, 
@@ -36,7 +36,7 @@ export default function FinanciamentosRoutes(controller) {
   );
 
   // 4. Pagar uma Parcela específica
-  // POST /api/financiamentos/parcelas/:id_parcela/pagar?id_usuario=1
+  // POST /api/financiamentos/parcelas/:id_parcela/pagar
   router.post(
     "/parcelas/:id_parcela/pagar", 
     validarPagamentoParcela, 
@@ -44,7 +44,7 @@ export default function FinanciamentosRoutes(controller) {
   );
 
   // 5. Amortizar Saldo Devedor
-  // POST /api/financiamentos/:id_financiamento/amortizar?id_usuario=1
+  // POST /api/financiamentos/:id_financiamento/amortizar
   router.post(
     "/:id_financiamento/amortizar", 
     validarAmortizacao, 
