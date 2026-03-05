@@ -67,14 +67,6 @@ CartaoCreditoModel.init(
       allowNull: false,
       defaultValue: true,
     },
-    criadoEm: {
-      type: DataTypes.DATE,
-      field: "created_at",
-    },
-    atualizadoEm: {
-      type: DataTypes.DATE,
-      field: "updated_at",
-    },
     nomeNorm: {
       type: DataTypes.STRING(120),
       allowNull: false,
@@ -95,8 +87,8 @@ CartaoCreditoModel.init(
     sequelize,
     tableName: "cartoes_credito",
     timestamps: true,
-    createdAt: "created_at",
-    updatedAt: "updated_at",
+    createdAt: "criado_em",
+    updatedAt: "atualizado_em",
 
     hooks: {
       beforeValidate: (instance) => {

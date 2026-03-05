@@ -14,7 +14,7 @@ export class CartoesRepositorioORM {
     });
   }
 
-   async buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario) {
+  async buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario) {
     return CartaoCreditoModel.findOne({
       where: { uuid_cartao: uuidCartao, idUsuario },
     });
@@ -105,20 +105,15 @@ export class CartoesRepositorioORM {
   }
 
   async editarCartao(idUsuario, uuidCartao, dadosCartao) {
-    try {
       const cartao = await CartaoCreditoModel.findOne({
         where: { idUsuario, uuid_cartao: uuidCartao },
       });
       cartao.set(dadosCartao);
       await cartao.save();
       return cartao;
-    } catch (error) {
-      throw error;
-    }
   }
 
   async buscarCartaoPorUuid(uuidCartao, connection) {
-    try {
       const cartao = await CartaoCreditoModel.findOne({
         where: { uuid_cartao: uuidCartao },
         attributes: ['id_cartao'],
@@ -126,9 +121,6 @@ export class CartoesRepositorioORM {
         raw: true
       });
       return cartao;
-    } catch (error) {
-      throw error;
-    }
   }
 
 }

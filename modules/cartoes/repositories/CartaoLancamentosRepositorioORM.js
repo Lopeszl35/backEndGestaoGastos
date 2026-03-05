@@ -29,7 +29,7 @@ export class CartaoLancamentosRepositorioORM {
     });
   }
 
-   /**
+  /**
    * Cria um lançamento (à vista ou parcelado) na tabela cartao_lancamentos.
    * OBS: Aqui não é lugar de regra de negócio — isso já veio calculado da Entity (valorParcela, primeiroMesRef, etc).
    */

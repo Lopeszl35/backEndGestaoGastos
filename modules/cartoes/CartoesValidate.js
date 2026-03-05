@@ -11,12 +11,6 @@ function validarRequisicao(req, res, next) {
 }
 
 export const obterVisaoGeralCartoesValidate = [
-  param("id_usuario")
-    .notEmpty()
-    .withMessage("O id_usuario é obrigatório.")
-    .isInt({ min: 1 })
-    .withMessage("O id_usuario deve ser um inteiro válido."),
-
   query("ano")
     .notEmpty()
     .withMessage("O ano é obrigatório.")
@@ -40,10 +34,6 @@ export const obterVisaoGeralCartoesValidate = [
 ];
 
 export const criarCartaoCreditoValidate = [
-  param("id_usuario")
-    .notEmpty().withMessage("O id_usuario é obrigatório.")
-    .isInt({ min: 1 }).withMessage("O id_usuario deve ser um inteiro válido."),
-
   body("nome")
     .notEmpty().withMessage("O nome do cartão é obrigatório.")
     .isString().withMessage("O nome deve ser texto.")
@@ -78,7 +68,6 @@ export const criarCartaoCreditoValidate = [
 ];
 
 export const criarLancamentoCartaoValidate = [
-  param("id_usuario").notEmpty().isInt({ min: 1 }).withMessage("id_usuario inválido."),
   param("cartao_uuid").notEmpty().isUUID().withMessage("cartao_uuid inválido."),
 
   body("descricao")
@@ -125,7 +114,6 @@ export const criarLancamentoCartaoValidate = [
 ];
 
 export const ativarDesativarCartaoValidate = [
-  param("id_usuario").notEmpty().isInt({ min: 1 }).withMessage("id_usuario inválido."),
   param("cartao_uuid").notEmpty().isUUID().withMessage("cartao_uuid inválido."),
 
   query("ativar").notEmpty().isBoolean().withMessage("ativo inválido (true/false)."),
@@ -134,7 +122,6 @@ export const ativarDesativarCartaoValidate = [
 ];
 
 export const editarCartaoValidate = [
-  param("id_usuario").notEmpty().isInt({ min: 1 }).withMessage("id_usuario inválido."),
   param("cartao_uuid").notEmpty().isUUID().withMessage("cartao_uuid inválido."),
 
   body("nome")
@@ -171,7 +158,6 @@ export const editarCartaoValidate = [
 ]
 
 export const pagarFaturaValidate = [
-  param("id_usuario").notEmpty().isInt({ min: 1 }).withMessage("id_usuario inválido."),
   param("id_cartao").notEmpty().isInt({ min: 1 }).withMessage("id_cartao inválido."),
 
   body("valorPagamento")

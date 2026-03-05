@@ -418,7 +418,7 @@ export class CartoesService {
         // Validação de valor
         const valorRestante = Number(fatura.totalLancamentos) - Number(fatura.totalPago);
         if (valorPagamento > valorRestante) {
-             throw new RequisicaoIncorreta(`Valor excede o restante da fatura. Restam: R$ ${valorRestante}`);
+            throw new RequisicaoIncorreta(`Valor excede o restante da fatura. Restam: R$ ${valorRestante}`);
         }
   
         // Disparamos o evento e passamos a transação 't' junto!
@@ -476,7 +476,6 @@ export class CartoesService {
   }
 
   async deletarCartao(idUsuario, uuidCartao) {
-    console.log("Deletar cartão chamado com: ", idUsuario, uuidCartao);
     try {
       const cartaoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario);
       if (!cartaoModel) throw new naoEncontrado("Cartão não encontrado.");
@@ -490,10 +489,8 @@ export class CartoesService {
   }
 
   async editarCartao(idUsuario, uuidCartao, dadosCartao) {
-    console.log("Editar cartão chamado com: ", idUsuario, uuidCartao, dadosCartao);
     try {
       const cartaoModel = await this.cartoesRepositorio.buscarCartaoPorUuidEUsuarioAtivoOuInativo(uuidCartao, idUsuario);
-      console.log("Cartão para editar: ", cartaoModel);
       if (!cartaoModel) throw new naoEncontrado("Cartão nao encontrado.");
 
       const cartaoEditado = await this.cartoesRepositorio.editarCartao(idUsuario, cartaoModel.uuid_cartao, dadosCartao);

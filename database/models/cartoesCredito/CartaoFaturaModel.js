@@ -49,18 +49,12 @@ CartaoFaturaModel.init(
       allowNull: false,
       defaultValue: "aberta",
     },
-    criadoEm: {
-      type: DataTypes.DATE,
-      field: "created_at",
-    },
-    atualizadoEm: {
-      type: DataTypes.DATE,
-      field: "updated_at",
-    },
   },
   {
     sequelize,
     tableName: "cartao_faturas",
-    timestamps: false,
+    timestamps: true,
+    createdAt: "criado_em",
+    updatedAt: "atualizado_em",
   }
 );

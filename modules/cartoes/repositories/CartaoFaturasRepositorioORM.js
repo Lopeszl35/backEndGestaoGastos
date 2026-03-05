@@ -66,14 +66,10 @@ export class CartaoFaturasRepositorioORM {
   }
 
   async buscarFaturaAtual(idCartao, idUsuario, ano, mes, transaction) {
-    try {
       return CartaoFaturaModel.findOne({
         where: { idCartao, idUsuario, ano, mes },
         transaction,
       });
-    } catch (error) {
-      throw error;
-    }
   }
 
 }

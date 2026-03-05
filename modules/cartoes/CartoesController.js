@@ -1,3 +1,5 @@
+import { matchedData } from "express-validator";
+
 export class CartoesController {
   constructor(cartoesService) {
     this.cartoesService = cartoesService;
@@ -5,10 +7,10 @@ export class CartoesController {
 
   async obterVisaoGeral(req, res, next) {
     try {
-      const idUsuario = Number(req.params.id_usuario);
-      const ano = Number(req.query.ano);
-      const mes = Number(req.query.mes);
-      const uuidCartaoSelecionado = req.query.cartao_uuid ?? null;
+      const idUsuario = req.userId;
+      const ano = matchedData(req.query).ano;
+      const mes = matchedData(req.query).mes;
+      const uuidCartaoSelecionado = matchedData(req.query).cartao_uuid ?? null;
 
       const resultado = await this.cartoesService.obterVisaoGeralCartoes({
         idUsuario,
@@ -25,7 +27,7 @@ export class CartoesController {
 
   async criarCartao(req, res, next) {
     try {
-      const idUsuario = Number(req.params.id_usuario);
+      const idUsuario = req.userId;
 
       const resultado = await this.cartoesService.criarCartaoCredito({
         idUsuario,
@@ -48,8 +50,8 @@ export class CartoesController {
 
   async criarLancamento(req, res, next) {
     try {
-        const idUsuario = Number(req.params.id_usuario);
-        const uuidCartao = String(req.params.cartao_uuid);
+        const idUsuario = req.userId;
+        const uuidCartao = String(matchedData(req.params).cartao_uuid);
 
         const resultado = await this.cartoesService.criarLancamentoCartao({
         idUsuario,
@@ -72,9 +74,9 @@ export class CartoesController {
 
   async ativarDesativarCartao(req, res, next) {
     try {
-      const idUsuario = Number(req.params.id_usuario);
-      const uuidCartao = String(req.params.cartao_uuid);
-      const ativar = req.query.ativar;
+      const idUsuario = req.userId;
+      const uuidCartao = String(matchedData(req.params).cartao_uuid);
+      const ativar = matchedData(req.query).ativar;
     
       const resultado = await this.cartoesService.ativarDesativarCartao({
         idUsuario,
@@ -90,9 +92,9 @@ export class CartoesController {
 
   async editarCartao(req, res, next) {
     try {
-      const idUsuario = Number(req.params.id_usuario);
-      const uuidCartao = String(req.params.cartao_uuid);
-      const dadosCartao = req.body; 
+      const idUsuario = req.userId;
+      const uuidCartao = String(matchedData(req.params).cartao_uuid);
+      const dadosCartao = matchedData(req.body);
 
       const resultado = await this.cartoesService.editarCartao(
         idUsuario,
@@ -108,9 +110,9 @@ export class CartoesController {
 
   async pagarFatura(req, res, next) {
     try {
-      const idUsuario = Number(req.params.id_usuario);
-      const idCartao = Number(req.params.id_cartao);
-      const { valorPagamento, ano, mes } = req.body;
+      const idUsuario = req.userId;
+      const idCartao = Number(matchedData(req.params).id_cartao);
+      const { valorPagamento, ano, mes } = matchedData(req.body);
 
       const resultado = await this.cartoesService.pagarFatura({
         idUsuario,
@@ -128,7 +130,7 @@ export class CartoesController {
 
   async obterTodosCartoes(req, res, next) {
     try {
-      const idUsuario = Number(req.params.id_usuario);
+      const idUsuario = req.userId;
       const resultado = await this.cartoesService.obterTodosCartoes(idUsuario);
       return res.status(200).json(resultado);
     } catch (error) {
@@ -138,8 +140,8 @@ export class CartoesController {
 
   async deletarCartao(req, res, next) {
     try {
-      const idUsuario = Number(req.params.id_usuario);
-      const uuidCartao = String(req.params.cartao_uuid);
+      const idUsuario = req.userId;
+      const uuidCartao = String(matchedData(req.params).cartao_uuid);
       const resultado = await this.cartoesService.deletarCartao(idUsuario, uuidCartao);
       return res.status(200).json(resultado);
     } catch (error) {

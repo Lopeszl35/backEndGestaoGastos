@@ -68,19 +68,13 @@ CartaoLancamentoModel.init(
       field: "ativo",
       allowNull: false,
       defaultValue: true,
-    },
-    criadoEm: {
-      type: DataTypes.DATE,
-      field: "created_at",
-    },
-    atualizadoEm: {
-      type: DataTypes.DATE,
-      field: "updated_at",
-    },
+    }
   },
   {
     sequelize,
     tableName: "cartao_lancamentos",
-    timestamps: false,
+    timestamps: true,
+    createdAt: "criado_em",
+    updatedAt: "atualizado_em",
   }
 );
